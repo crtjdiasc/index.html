@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART CARD CECOPSV2026/01 – SAMARCO</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --samarco-blue: #004a80;
+            --samarco-orange: #f29100;
+            --white: #ffffff;
+            --gray: #f4f7f6;
+            --dark: #2c3e50;
+            --success: #28a745;
+            --danger: #dc3545;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--gray); overflow-x: hidden; }
+
+        header {
+            background: var(--samarco-blue);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0; width: 100%; height: 65px;
+            z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            border-bottom: 4px solid var(--samarco-orange);
+        }
+
+        #relogio { font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 1.1rem; }
+
+        nav {
+            margin-top: 65px; background: white;
+            display: flex; overflow-x: auto;
+            position: sticky; top: 65px; z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        nav button {
+            padding: 15px 20px; border: none; background: none;
+            cursor: pointer; font-weight: bold; color: var(--samarco-blue);
+            white-space: nowrap; transition: 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        nav button.active { border-bottom: 3px solid var(--samarco-orange); background: #f0f4f8; }
+
+        main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--samarco-blue); }
+        input, select, textarea {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;
+        }
+
+        .search-input { 
+            margin-bottom: 2px; 
+            padding: 8px; 
+            font-size: 0.85rem; 
+            border-bottom: none; 
+            border-radius: 6px 6px 0 0;
+            background: #fff9f0;
+        }
+
+        .btn-main {
+            background: var(--samarco-blue); color: white; border: none;
+            padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%;
+        }
+        .btn-main:disabled { background: #ccc; cursor: not-allowed; }
+
+        #listaPontosPreview { 
+            background: #f9f9f9; padding: 10px; border: 1px dashed var(--samarco-blue); 
+            max-height: 150px; overflow-y: auto; margin-bottom: 10px; font-size: 0.9rem;
+        }
+
+        .ponto-box {
+            background: var(--dark); color: white; padding: 30px; 
+            border-radius: 12px; text-align: center; margin-bottom: 20px;
+        }
+        .progress-container { background: #444; height: 25px; border-radius: 12px; overflow: hidden; margin: 15px 0; }
+        .progress-bar { background: var(--samarco-orange); height: 100%; width: 0%; transition: 0.3s; }
+
+        .ronda-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn-check { padding: 20px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .btn-conforme { background: var(--success); }
+        .btn-n-conforme { background: var(--danger); }
+
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .dash-card { padding: 20px; border-radius: 8px; text-align: center; color: white; border-bottom: 4px solid rgba(0,0,0,0.2); }
+
+        table { width: 100%; border-collapse: collapse; }
+        table th, table td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        table th { background: var(--samarco-blue); color: white; }
+
+        #modalAlarme {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;
+        }
+        .alarme-content {
+            background: white; padding: 40px; border-radius: 15px; text-align: center;
+            border: 5px solid var(--danger); animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .time-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<audio id="audioAlarme" loop>
+    <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+</audio>
+
+<div id="modalAlarme">
+    <div class="alarme-content">
+        <h1 style="color: var(--danger); margin: 0;">🚨 HORA DA RONDA!</h1>
+        <p id="txtAlarmePonto" style="font-size: 1.5rem; font-weight: bold; margin: 20px 0;"></p>
+        <button onclick="confirmarAlarme()" style="background: var(--success); color: white; padding: 20px 40px; border: none; border-radius: 10px; font-size: 1.2rem; cursor: pointer; font-weight: bold;">CONFIRMAR LEITURA</button>
+    </div>
+</div>
+
+<header>
+    <div class="logo"><b>SAMARCO</b> | SMART CARD CECOPSV2026/01</div>
+    <div id="relogio">00/00/0000 00:00:00</div>
+</header>
+
+<nav id="navbar">
+    <button onclick="changeTab('aba-cadastro', this)" class="active">CADASTRO</button>
+    <button onclick="changeTab('aba-programacao', this)">PROGRAMAÇÃO</button>
+    <button onclick="changeTab('aba-finalizados', this)">CARTÕES FINALIZADOS</button>
+    <button onclick="changeTab('aba-V01', this)">VICTOR 01</button>
+    <button onclick="changeTab('aba-V02', this)">VICTOR 02</button>
+    <button onclick="changeTab('aba-V03', this)">VICTOR 03</button>
+    <button onclick="changeTab('aba-A02', this)">ALFA 02</button>
+    <button onclick="changeTab('aba-dashboard', this)">DASHBOARD</button>
+</nav>
+
+<main>
+    <section id="aba-cadastro" class="tab-content active">
+        <div class="grid">
+            <div class="card">
+                <h3>Cadastrar Cartão (25 Pontos)</h3>
+                <input type="text" id="cad_cartao_num" placeholder="Número do Cartão">
+                <select id="cad_cartao_veic">
+                    <option value="VICTOR 01">VICTOR 01</option>
+                    <option value="VICTOR 02">VICTOR 02</option>
+                    <option value="VICTOR 03">VICTOR 03</option>
+                    <option value="ALFA 02">ALFA 02</option>
+                </select>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="cad_ponto_nome" placeholder="Nome do Ponto">
+                    <button onclick="adicionarPontoAoCartao()" style="width: 50px; background: var(--samarco-orange); border: none; color: white; cursor: pointer;">+</button>
+                </div>
+                <div id="listaPontosPreview">Aguardando pontos (0/25)...</div>
+                <button id="btnSalvarCartao" class="btn-main" disabled onclick="enviarCartaoPlanilha()">SALVAR CARTÃO NO SISTEMA</button>
+            </div>
+
+            <div class="card">
+                <h3>Outros Cadastros</h3>
+                <input type="text" id="cad_aux_nome" placeholder="Nome (Operador, Local, etc)">
+                <select id="cad_aux_tipo">
+                    <option value="Operador">Operador</option>
+                    <option value="Rondante">Rondante (Vigilante)</option>
+                    <option value="Redirecionamento">Local (Redirecionamento)</option>
+                    <option value="Desvio">Local (Desvio)</option>
+<option value="Motivo">Motivo</option>
+<option value="Supervisor">Supervisor</option>
+<option value="Placa">Placa</option>
+                </select>
+                <button class="btn-main" onclick="enviarAuxiliar()">CADASTRAR</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="aba-programacao" class="tab-content">
+        <div class="grid">
+            <div class="card">
+                <h3>Configurar Alarme Automático</h3>
+                <label>Ponto de Patrulhamento</label>
+                <input type="text" id="prog_ponto" placeholder="Ex: Ponto 01 - Entrada">
+                <label>Horário do Alerta</label>
+                <input type="time" id="prog_hora">
+                <button class="btn-main" onclick="adicionarHorario()">SALVAR NA PROGRAMAÇÃO</button>
+            </div>
+            <div class="card">
+                <h3>Horários Cadastrados</h3>
+                <table id="tabelaProgramacao">
+                    <thead>
+                        <tr><th>Horário</th><th>Ponto</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="corpoProgramacao"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="aba-finalizados" class="tab-content">
+        <div class="card">
+            <h3>Histórico de Cartões Finalizados</h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button onclick="exportarExcel()" style="background: #1d6f42; color:white; border:none; padding:10px; cursor:pointer; border-radius:4px;">Exportar Excel (XLSX)</button>
+                <button onclick="gerarRelatorioPDF()" style="background: #e74c3c; color:white; border:none; padding:10px; cursor:pointer; border-radius:4px;">Gerar PDF Auditoria</button>
+                <button onclick="limparHistorico()" style="background: #555; color:white; border:none; padding:10px; cursor:pointer; border-radius:4px;">Limpar Local</button>
+<button onclick="limparRegistrosComErro()" 
+    style="background:#f39c12; color:white; border:none; padding:10px; border-radius:4px;">
+    Limpar Dados com Erro
+</button>
+<button onclick="limpezaForcadaTotal()"
+style="background:#000;color:white;padding:10px;border:none;border-radius:4px;">
+LIMPEZA TOTAL REAL
+</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="tabelaFinalizados">
+                   <thead>
+<tr>
+    <th>Data/Hora<br><input onkeyup="filtrarTabela(0,this.value)" placeholder="Filtrar"></th>
+    <th>Veículo<br><input onkeyup="filtrarTabela(1,this.value)" placeholder="Filtrar"></th>
+    <th>Cartão<br><input onkeyup="filtrarTabela(2,this.value)" placeholder="Filtrar"></th>
+    <th>Operador<br><input onkeyup="filtrarTabela(3,this.value)" placeholder="Filtrar"></th>
+    <th>Rondante<br><input onkeyup="filtrarTabela(4,this.value)" placeholder="Filtrar"></th>
+    <th>Score<br><input onkeyup="filtrarTabela(5,this.value)" placeholder="Filtrar"></th>
+    <th>Status Pontos<br><input onkeyup="filtrarTabela(6,this.value)" placeholder="Filtrar"></th>
+    <th>Ações</th>
+</tr>
+</thead>
+                    <tbody id="corpoFinalizados"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div id="container-veiculos"></div>
+
+    <section id="aba-dashboard" class="tab-content">
+        <div class="dash-grid">
+            <div class="dash-card" style="background: var(--samarco-blue);">Rondas Mensais<h2 id="d_rondas">0</h2></div>
+            <div class="dash-card" style="background: var(--success);">Conformidade<h2 id="d_conf">0%</h2></div>
+            <div class="dash-card" style="background: var(--danger);">Ocorrências<h2 id="d_ocor">0</h2></div>
+        </div>
+        <div class="grid">
+            <div class="card"><canvas id="chartGeral"></canvas></div>
+            <div class="card">
+                <h3>Ações de Sistema</h3>
+                <button class="btn-main" onclick="window.print()" style="background: #e74c3c;">Imprimir Tela Atual</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxpvyfuDMihL2g7w3nPEcp1pwbMNgpOMl9uYTxFzeL8RWUMqp3_bwZZNCFPeM7tke3dvg/exec";
+
+    let db = {
+    cartoes: [],
+    operadores: [],
+    rondantes: [],
+    supervisores: [],
+    placas: [],
+    locais: [],
+    motivos: [],
+    finalizados: [],
+    programacao: []
+};
+function restaurarBancoLocal() {
+    const bancoSalvo = localStorage.getItem("smartcard_db");
+
+    if (bancoSalvo) {
+        db = JSON.parse(bancoSalvo);
+        console.log("✅ Banco restaurado do navegador");
+    }
+}
+    let pontosTemporarios = [];
+    let rondaEmCurso = JSON.parse(localStorage.getItem('ronda_em_curso')) || {};
+    let ultimoAlarmeConfirmado = "";
+    let chartInstance = null;
+
+
+// 🔐 SENHA DOS BOTÕES DE LIMPEZA
+const SENHA_LIMPEZA = "123456"; // troque pela sua senha
+
+function confirmarSenha() {
+    const senhaDigitada = prompt("🔐 Digite a senha para confirmar:");
+
+    if (!senhaDigitada) return false;
+
+    if (senhaDigitada === SENHA_LIMPEZA) {
+        return true;
+    } else {
+        alert("❌ Senha incorreta!");
+        return false;
+    }
+}
+
+    function atualizarRelogio() {
+        const elRelogio = document.getElementById('relogio');
+        if (!elRelogio) return;
+        const agora = new Date();
+        elRelogio.innerText = agora.toLocaleString('pt-BR');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+restaurarBancoLocal();
+     atualizarRelogio();
+        setInterval(atualizarRelogio, 1000);
+        renderizarAbasVeiculos();
+        popularTodosSelects();
+        restaurarEstadoRondas();
+
+          
+ renderizarProgramacao();
+        renderizarHistorico();
+        setInterval(verificarAlarmes, 10000);
+        atualizarDash();
+        sincronizarComPlanilha();
+setInterval(sincronizarComPlanilha, 30000);
+
+
+    });
+
+  async function sincronizarComPlanilha() {
+    try {
+        const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
+        const data = await response.json();
+
+        // Limpa tudo antes de recriar
+        const novoDB = {
+    cartoes: [],
+    operadores: [],
+    rondantes: [],
+    locais: [],
+    finalizados: [],
+    programacao: [...db.programacao] // CLONA a programação local
+};
+
+        // ==========================
+        // LENDO ABA CADASTROS
+        // ==========================
+        if (data.Cadastros) {
+
+            data.Cadastros.forEach(linha => {
+
+               const tipo = linha[1];
+const nome = linha[2];
+
+if (tipo === "Operador") {
+    novoDB.operadores.push(nome);
+}
+
+else if (tipo === "Rondante") {
+    novoDB.rondantes.push(nome);
+}
+
+else if (tipo === "Desvio" || tipo === "Redirecionamento") {
+    novoDB.locais.push(nome);
+}
+
+
+
+             // CARTÕES
+else if (tipo && tipo.toUpperCase().includes("CART")) {
+
+    const numero = linha[2];      // coluna número do cartão
+    const veiculo = linha[3];     // coluna veículo
+    const pontosRaw = linha[4];   // coluna pontos
+
+    const pontos = pontosRaw
+        ? pontosRaw.split("|")
+        : [];
+
+   novoDB.cartoes.push({
+    num: numero,
+    veiculo: veiculo,
+    pontos: pontos
+});
+}
+
+// LOCAIS (Desvio e Redirecionamento)
+
+            });
+        }
+
+       // ==========================
+// FINALIZADOS LIMPOS E FILTRADOS
+// ==========================
+
+// ==========================
+// FINALIZADOS (PADRÃO ARRAY)
+// ==========================
+if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
+
+    // Remove duplicados pela Data/Hora
+    const mapaUnico = {};
+
+    data.CartoesFinalizados.forEach(reg => {
+        if(reg && reg[0]) {
+            mapaUnico[reg[0]] = reg;
+        }
+    });
+
+    novoDB.finalizados = Object.values(mapaUnico);
+
+} else {
+    novoDB.finalizados = [];
+}
+renderizarHistorico();
+atualizarDash();
+        
+db.cartoes = novoDB.cartoes;
+db.operadores = novoDB.operadores;
+db.rondantes = novoDB.rondantes;
+db.locais = novoDB.locais;
+db.finalizados = novoDB.finalizados;
+salvarLocal();
+// ATUALIZA A TELA
+        popularTodosSelects();
+        renderizarHistorico();
+        atualizarDash();
+restaurarEstadoRondas();
+
+        console.log("✅ Dados da planilha carregados no sistema");
+
+    } catch (erro) {
+        console.log("Erro ao sincronizar:", erro);
+    }
+}
+
+function limpezaForcadaTotal() {
+
+    if (!confirmarSenha()) return;
+
+    if(!confirm("⚠️ LIMPEZA TOTAL DO SISTEMA?")) return;
+
+    db.finalizados = [];
+    localStorage.removeItem("smartcard_db");
+localStorage.removeItem("ronda_em_curso");
+    renderizarHistorico();
+    atualizarDash();
+    sincronizarComPlanilha();
+
+    alert("✅ Sistema reiniciado e sincronizado.");
+}
+function limparRegistrosComErro() {
+
+    if (!confirmarSenha()) return;
+
+    db.finalizados = db.finalizados.filter(r => 
+        r &&
+        r.length >= 7 &&
+        r[0] &&
+        r[2] &&
+        r[5]
+    );
+
+    renderizarHistorico();
+    atualizarDash();
+
+    alert("✅ Registros inválidos removidos!");
+}
+    
+   
+    function removerProgramacao(index) {
+        if(confirm("Deseja remover este alarme?")) { db.programacao.splice(index, 1); salvarLocal(); renderizarProgramacao(); }
+    }
+
+    function verificarAlarmes() {
+        const agora = new Date();
+        const horaAtual = agora.getHours().toString().padStart(2, '0') + ":" + agora.getMinutes().toString().padStart(2, '0');
+        const alarmePendente = db.programacao.find(p => p.hora === horaAtual);
+        if (alarmePendente && ultimoAlarmeConfirmado !== horaAtual) { dispararAlerta(alarmePendente.ponto, horaAtual); }
+    }
+
+    function dispararAlerta(ponto, hora) {
+        document.getElementById('txtAlarmePonto').innerText = `PONTO: ${ponto}`;
+        document.getElementById('modalAlarme').style.display = "flex";
+        document.getElementById('audioAlarme').play().catch(e => {});
+    }
+
+    function confirmarAlarme() {
+        const agora = new Date();
+        ultimoAlarmeConfirmado = agora.getHours().toString().padStart(2, '0') + ":" + agora.getMinutes().toString().padStart(2, '0');
+        document.getElementById('modalAlarme').style.display = "none";
+        document.getElementById('audioAlarme').pause();
+        document.getElementById('audioAlarme').currentTime = 0;
+    }
+
+    function changeTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        if (id === 'aba-dashboard') atualizarDash();
+    }
+
+   function salvarLocal() {
+    localStorage.setItem("smartcard_db", JSON.stringify(db));
+}
+
+
+
+    function ordenarListas() {
+        db.operadores = [...new Set(db.operadores)].sort();
+        db.rondantes = [...new Set(db.rondantes)].sort();
+        db.locais = [...new Set(db.locais)].sort();
+    }
+
+    function filtrarSelect(inputId, selectId) {
+        const filtro = document.getElementById(inputId).value.toUpperCase();
+        const select = document.getElementById(selectId);
+        const options = select.getElementsByTagName("option");
+        for (let i = 0; i < options.length; i++) {
+            const txt = options[i].textContent || options[i].innerText;
+            options[i].style.display = (txt.toUpperCase().indexOf(filtro) > -1 || i === 0) ? "" : "none";
+        }
+    }
+
+    function adicionarPontoAoCartao() {
+        const nome = document.getElementById('cad_ponto_nome').value;
+        if(!nome) return;
+        if(pontosTemporarios.length < 25) {
+            pontosTemporarios.push(nome);
+            document.getElementById('cad_ponto_nome').value = "";
+            renderizarPreviewPontos();
+        }
+        document.getElementById('btnSalvarCartao').disabled = (pontosTemporarios.length !== 25);
+    }
+
+    function renderizarPreviewPontos() {
+        const div = document.getElementById('listaPontosPreview');
+        div.innerHTML = pontosTemporarios.map((p, i) => `<div>${i+1}. ${p}</div>`).join('');
+        if(pontosTemporarios.length === 25) div.style.borderColor = "var(--success)";
+    }
+
+    async function enviarCartaoPlanilha() {
+        const cartao = {
+            num: document.getElementById('cad_cartao_num').value,
+            veiculo: document.getElementById('cad_cartao_veic').value,
+            pontos: [...pontosTemporarios]
+        };
+        db.cartoes.push(cartao);
+
+        salvarLocal();
+        popularTodosSelects();
+        alert(`Cartão ${cartao.num} salvos!`);
+        pontosTemporarios = [];
+        document.getElementById('cad_cartao_num').value = "";
+        document.getElementById('listaPontosPreview').innerHTML = "Aguardando pontos (0/25)...";
+        document.getElementById('btnSalvarCartao').disabled = true;
+        apiPost("Cadastros", [new Date().toLocaleString(), "CARTÃO", cartao.num, cartao.veiculo, cartao.pontos.join('|')]);
+    }
+
+    async function enviarAuxiliar() {
+        const nome = document.getElementById('cad_aux_nome').value;
+        const tipo = document.getElementById('cad_aux_tipo').value;
+        if(!nome) return;
+       if(tipo === "Operador") db.operadores.push(nome);
+
+else if(tipo === "Rondante") db.rondantes.push(nome);
+
+else if(tipo === "Supervisor") db.supervisores.push(nome);
+
+else if(tipo === "Placa") db.placas.push(nome);
+
+else if(tipo === "Motivo") db.motivos.push(nome);
+
+else db.locais.push(nome);
+        ordenarListas();
+        salvarLocal();
+        popularTodosSelects();
+        alert(`${tipo} cadastrado!`);
+        document.getElementById('cad_aux_nome').value = "";
+        apiPost("Cadastros", [new Date().toLocaleString(), tipo, nome]);
+    }
+
+    function renderizarAbasVeiculos() {
+        const veics = [{id: 'V01', n: 'VICTOR 01'}, {id: 'V02', n: 'VICTOR 02'}, {id: 'V03', n: 'VICTOR 03'}, {id: 'A02', n: 'ALFA 02'}];
+        const container = document.getElementById('container-veiculos');
+        container.innerHTML = veics.map(v => `
+            <section id="aba-${v.id}" class="tab-content">
+                <div class="grid">
+                    <div class="card">
+                        <h3>Operação: ${v.n}</h3>
+                        <label>Cartão do Veículo</label>
+                        <input type="text" placeholder="🔍 Pesquisar cartão..." class="search-input" id="search_cartao_${v.id}" onkeyup="filtrarSelect('search_cartao_${v.id}', 'sel_cartao_${v.id}')">
+                        <select id="sel_cartao_${v.id}" onchange="iniciarSessaoRonda('${v.id}')"></select>
+                        <label>Operador</label>
+                        <input type="text" placeholder="🔍 Pesquisar operador..." class="search-input" id="search_op_${v.id}" onkeyup="filtrarSelect('search_op_${v.id}', 'sel_op_${v.id}')">
+                        <select id="sel_op_${v.id}" onchange="salvarEstadoTempoReal('${v.id}')"></select>
+                        <label>Rondante (Vigilante)</label>
+                        <input type="text" placeholder="🔍 Pesquisar rondante..." class="search-input" id="search_ron_${v.id}" onkeyup="filtrarSelect('search_ron_${v.id}', 'sel_ron_${v.id}')">
+                        <select id="sel_ron_${v.id}" onchange="salvarEstadoTempoReal('${v.id}')"></select>
+                        <label>Placa do Veículo</label>
+<input type="text" placeholder="🔍 Pesquisar placa..." 
+class="search-input"
+id="search_placa_${v.id}"
+onkeyup="filtrarSelect('search_placa_${v.id}', 'sel_placa_${v.id}')">
+
+<select id="sel_placa_${v.id}" onchange="salvarEstadoTempoReal('${v.id}')"></select>
+
+<label>Supervisor</label>
+<input type="text" placeholder="🔍 Pesquisar supervisor..." 
+class="search-input"
+id="search_sup_${v.id}"
+onkeyup="filtrarSelect('search_sup_${v.id}', 'sel_sup_${v.id}')">
+
+<select id="sel_sup_${v.id}" onchange="salvarEstadoTempoReal('${v.id}')"></select>
+
+<label>Observações Finais</label>
+<textarea id="obs_${v.id}" rows="2" oninput="salvarEstadoTempoReal('${v.id}')"></textarea>
+                    </div>
+                    <div class="card">
+                        <div class="ponto-box">
+                            <h4 id="nome_ponto_${v.id}">AGUARDANDO SELEÇÃO</h4>
+
+<div id="ponto_anterior_${v.id}" 
+style="color:red; font-weight:bold; margin-bottom:5px;">
+PONTO ANTERIOR: ---
+</div>
+
+<div class="progress-container">
+<div id="bar_${v.id}" class="progress-bar"></div>
+</div>
+
+<h2 id="cont_ponto_${v.id}">PONTO 1 / 25</h2>
+                            <div class="time-box">
+                                <div><small>Início</small><div id="h_ini_${v.id}" style="font-weight:bold; color:var(--samarco-orange);">--:--:--</div></div>
+                                <div><small>Hora Final</small><input type="time" id="h_fim_${v.id}" step="1" style="margin:0; padding:5px; height:35px; color:#000;"></div>
+                            </div>
+                        </div>
+                        <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #eee;">
+    <label>⚠️ Motivo</label>
+
+<input type="text" placeholder="🔍 Pesquisar motivo..."
+class="search-input"
+id="search_motivo_${v.id}"
+onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
+
+<select id="sel_motivo_${v.id}"></select>                        
+<label>📍 Desvio do Ponto</label>
+                            <input type="text" placeholder="🔍 Local..." class="search-input" id="search_loc_ponto_${v.id}" onkeyup="filtrarSelect('search_loc_ponto_${v.id}', 'sel_loc_ponto_${v.id}')">
+                            <select id="sel_loc_ponto_${v.id}"></select>
+                           <p style="font-weight:bold; text-align:center; margin-bottom:10px;">
+    O PATRULHAMENTO FOI REALIZADO?
+</p>
+
+ <div class="ronda-btns">
+                                <button class="btn-check btn-conforme" onclick="registrarAcao('${v.id}', true)">SIM</button>
+                                <button class="btn-check btn-n-conforme" onclick="registrarAcao('${v.id}', false)">NÃO</button>
+                            </div>
+                        </div>
+                        <button id="btn_fin_${v.id}" class="btn-main" style="margin-top:20px;" disabled onclick="finalizarRonda('${v.id}')">FINALIZAR E ENVIAR</button>
+                    </div>
+                </div>
+            </section>`).join('');
+    }
+
+    function popularTodosSelects() {
+        const veicIds = ['V01', 'V02', 'V03', 'A02'];
+        const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
+        ordenarListas();
+        veicIds.forEach((id, idx) => {
+            const sCartao = document.getElementById(`sel_cartao_${id}`);
+            const sOp = document.getElementById(`sel_op_${id}`);
+            const sRon = document.getElementById(`sel_ron_${id}`);
+            const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
+            if(!sCartao) return;
+const sMotivo = document.getElementById(`sel_motivo_${id}`);
+
+if(sMotivo){
+const sSup = document.getElementById(`sel_sup_${id}`);
+const sPlaca = document.getElementById(`sel_placa_${id}`);
+
+if(sSup){
+sSup.innerHTML =
+'<option value="">---</option>' +
+db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+if(sPlaca){
+sPlaca.innerHTML =
+'<option value="">---</option>' +
+db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+sMotivo.innerHTML =
+'<option value="">Sem Motivo</option>' +
+db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+            sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' + db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => `<option value="${c.num}">${c.num}</option>`).join('');
+            sOp.innerHTML = '<option value="">---</option>' + db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
+            sRon.innerHTML = '<option value="">---</option>' + db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
+            sLocPonto.innerHTML = '<option value="">Sem Desvio</option>' + db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
+        });
+    }
+
+    function salvarEstadoTempoReal(vId) {
+        if (!rondaEmCurso[vId]) return;
+        rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
+        rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
+        rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
+rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
+rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
+        localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+salvarLocal();
+    }
+
+    function restaurarEstadoRondas() {
+    ['V01', 'V02', 'V03', 'A02'].forEach(vId => {
+        const r = rondaEmCurso[vId];
+        if (r) {
+            document.getElementById(`sel_cartao_${vId}`).value = r.num;
+            document.getElementById(`sel_op_${vId}`).value = r.op || "";
+            document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
+            document.getElementById(`obs_${vId}`).value = r.obs || "";
+            
+            // Sincronizar pontos já lançados
+           
+            if (r.index < 25) atualizarInterfaceRonda(vId);
+            else {
+                document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
+                document.getElementById(`bar_${vId}`).style.width = "100%";
+                document.getElementById(`btn_fin_${vId}`).disabled = false;
+            }
+        }
+    });
+}
+
+   function iniciarSessaoRonda(vId) {
+
+    const num = document.getElementById(`sel_cartao_${vId}`).value;
+    if(!num) return;
+
+    const veiculosMap = {
+        V01: "VICTOR 01",
+        V02: "VICTOR 02",
+        V03: "VICTOR 03",
+        A02: "ALFA 02"
+    };
+
+    const nomeVeiculo = veiculosMap[vId];
+
+    const cartao = db.cartoes.find(c => 
+        c.num === num && c.veiculo === nomeVeiculo
+    );
+
+    if(!cartao) {
+        alert("⚠️ Cartão não encontrado para este veículo.");
+        return;
+    }
+
+    rondaEmCurso[vId] = {
+    num: num,
+    dataInicio: new Date().toLocaleString(), // 🔥 IMPORTANTE
+    pontosOriginais: [...cartao.pontos],
+    index: 0,
+    respostas: [],
+    op: "",
+    ron: "",
+    obs: ""
+};
+    salvarEstadoTempoReal(vId);
+    atualizarInterfaceRonda(vId);
+    document.getElementById(`btn_fin_${vId}`).disabled = true;
+}
+    
+    function atualizarInterfaceRonda(vId) {
+        let r = rondaEmCurso[vId];
+
+let pontoAnterior = r.index > 0 ? r.pontosOriginais[r.index - 1] : "---";
+
+document.getElementById(`ponto_anterior_${vId}`).innerText =
+`PONTO ANTERIOR: ${pontoAnterior}`;
+        document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
+        document.getElementById(`cont_ponto_${vId}`).innerText = `PONTO ${r.index + 1} / 25`;
+        document.getElementById(`bar_${vId}`).style.width = (r.index / 25 * 100) + "%";
+        
+        // Captura o horário de início do ponto no momento que ele aparece
+        const agora = new Date();
+        document.getElementById(`h_ini_${vId}`).innerText = agora.toLocaleTimeString('pt-BR');
+    }
+
+   async function finalizarRonda(vId) {
+    const r = rondaEmCurso[vId];
+    const score = ((r.respostas.filter(x => x.status === "Conforme").length / 25) * 100).toFixed(1) + "%";
+    
+    // INCLUINDO O DESVIO NA STRING DE DETALHES
+    const detalhesFormatados = r.respostas.map(x => 
+        `${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Desvio: ${x.desvio}`
+    ).join(' || ');
+
+    const valores = [
+new Date().toLocaleString(),
+vId,
+r.num,
+r.placa,
+r.op,
+r.ron,
+r.sup,
+score,
+detalhesFormatados
+];
+
+    db.finalizados.push(valores);
+    salvarLocal();
+    
+    delete rondaEmCurso[vId];
+    localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+   
+    renderizarHistorico();
+    
+    // Tenta enviar para o Google Sheets
+    apiPost("CartoesFinalizados", valores);
+
+    alert("Ronda Finalizada com Sucesso!");
+    location.reload(); // Recarrega para limpar os campos da tela
+}
+
+    async function apiPost(aba, valores) {
+        try {
+            await fetch(API_URL, { 
+                method: "POST", 
+                mode: "no-cors", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ aba: aba, valores: valores }) 
+            });
+            atualizarDash();
+        } catch(e) { console.error("Erro ao enviar dados para o Google Sheets"); }
+    }
+
+   function renderizarHistorico() {
+    const corpo = document.getElementById('corpoFinalizados');
+    if(!corpo) return;
+
+    corpo.innerHTML = db.finalizados.map((r, index) => `
+        <tr>
+            <td>${r[0]}</td>
+            <td>${r[1]}</td>
+            <td>${r[2]}</td>
+            <td>${r[3]}</td>
+            <td>${r[4]}</td>
+            <td style="font-weight:bold; color:${parseFloat(r[5]) >= 90 ? 'var(--success)' : 'var(--danger)'}">
+                ${r[5]}
+            </td>
+            <td style="font-size:0.8rem;">${r[6]}</td>
+            <td>
+    <button onclick="gerarPDFIndividual(${index})"
+        style="background:#004a80;color:white;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;margin-bottom:4px;">
+        PDF
+    </button>
+
+    <button onclick="excluirCartaoFinalizado(${index})"
+        style="background: var(--danger); 
+               color:white; 
+               border:none; 
+               padding:6px 10px; 
+               border-radius:4px; 
+               cursor:pointer;">
+        Excluir
+    </button>
+</td>
+        </tr>
+    `).join('');
+}
+
+    function limparHistorico() {
+
+    if (!confirmarSenha()) return;
+
+    if(confirm("Limpar dados locais?")) {
+        db.finalizados = [];
+        salvarLocal();
+        renderizarHistorico();
+        atualizarDash();
+    }
+}
+
+    function exportarExcel() {
+        const ws = XLSX.utils.aoa_to_sheet([["Data", "Veículo", "Cartão", "Operador", "Rondante", "Score", "Detalhes"], ...db.finalizados]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Rondas");
+        XLSX.writeFile(wb, "Rondas_Samarco.xlsx");
+    }
+
+    function gerarRelatorioPDF() {
+
+    // 🔒 PERMITIR PDF VAZIO
+    if (!db.finalizados || db.finalizados.length === 0) {
+        alert("Não há cartões finalizados para gerar o PDF.");
+        return;
+    }
+
+    const doc = new jspdf.jsPDF('l', 'mm', 'a4');
+        doc.text("RELATÓRIO DE RONDAS - SAMARCO", 14, 15);
+        doc.autoTable({ 
+            startY: 20, 
+            head: [["Data", "Veículo", "Cartão", "Operador", "Rondante", "Score", "Detalhes"]], 
+            body: db.finalizados.map(r => [r[0], r[1], r[2], r[3], r[4], r[5], r[6]]),
+            styles: { fontSize: 7 }
+        });
+        doc.save("Relatorio_Rondas.pdf");
+    }
+
+
+function gerarPDFIndividual(index) {
+
+    const r = db.finalizados[index];
+
+    const doc = new jspdf.jsPDF('p', 'mm', 'a4');
+
+    // Cabeçalho
+    doc.setFillColor(0, 74, 128);
+    doc.rect(0, 0, 210, 20, 'F');
+
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14);
+    doc.text("SMART CARD - RELATÓRIO DE RONDA", 105, 12, {align: "center"});
+
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(11);
+
+    let y = 30;
+
+    doc.text(`Data/Hora: ${r[0]}`, 15, y);
+    y += 8;
+    doc.text(`Veículo: ${r[1]}`, 15, y);
+    y += 8;
+    doc.text(`Cartão: ${r[2]}`, 15, y);
+    y += 8;
+    doc.text(`Operador: ${r[3]}`, 15, y);
+    y += 8;
+    doc.text(`Rondante: ${r[4]}`, 15, y);
+    y += 8;
+
+    doc.setFontSize(13);
+    doc.setTextColor(242, 145, 0);
+    doc.text(`Score Final: ${r[5]}`, 15, y);
+    y += 12;
+
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(10);
+
+    doc.text("Detalhamento dos Pontos:", 15, y);
+    y += 6;
+
+    doc.autoTable({
+        startY: y,
+        head: [["Detalhes"]],
+        body: [[r[6]]],
+        styles: {
+            fontSize: 8,
+            cellWidth: 180
+        }
+    });
+
+    doc.save(`Ronda_${r[2]}_${r[0].replace(/[/:]/g,'-')}.pdf`);
+}
+
+
+    function atualizarDash() {
+        const finalizados = db.finalizados || [];
+        const total = finalizados.length;
+        document.getElementById('d_rondas').innerText = total;
+
+        if(total > 0) {
+            const somaScore = finalizados.reduce((acc, curr) => acc + (parseFloat(curr[5]) || 0), 0);
+            const media = (somaScore / total).toFixed(1);
+            document.getElementById('d_conf').innerText = media + "%";
+            
+            const ocorrencias = finalizados.filter(r => parseFloat(r[5]) < 100).length;
+            document.getElementById('d_ocor').innerText = ocorrencias;
+        }
+
+
+    }
+
+async function excluirCartaoFinalizado(index) {
+
+    if (!confirmarSenha()) return;
+
+    if(!confirm("⚠️ Deseja excluir definitivamente da planilha?")) return;
+
+    const registro = db.finalizados[index];
+    const dataHora = registro[0];
+
+    try {
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                acao: "excluirFinalizado",
+                dataHora: dataHora
+            })
+        });
+
+        db.finalizados.splice(index, 1);
+        renderizarHistorico();
+        atualizarDash();
+        alert("✅ Cartão excluído definitivamente da planilha!");
+        sincronizarComPlanilha();
+
+    } catch (erro) {
+        alert("❌ Erro ao excluir da planilha.");
+        console.error(erro);
+    }
+}
+
+function filtrarTabela(coluna, valor) {
+
+    const filtro = valor.toUpperCase();
+    const linhas = document.querySelectorAll("#tabelaFinalizados tbody tr");
+
+    linhas.forEach(linha => {
+        const celula = linha.children[coluna];
+        if (!celula) return;
+
+        const texto = celula.textContent || celula.innerText;
+
+        linha.style.display =
+            texto.toUpperCase().indexOf(filtro) > -1
+            ? ""
+            : "none";
+    });
+}
+async function salvarProgramacao(ponto, hIni, hFim, obs) {
+    const valores = [
+        new Date().toLocaleString(),
+        ponto,
+        hIni,
+        hFim,
+        obs || ""
+    ];
+    await salvarNaPlanilha("Programacao", valores);
+    console.log("✅ Programação sincronizada!");
+}
+async function salvarRondaEmAndamento(vId) {
+
+    const r = rondaEmCurso[vId];
+    if (!r) return;
+
+    const valores = [
+        r.dataInicio,
+        vId,
+        r.num,
+        r.index,
+        r.op || "",
+        r.ron || "",
+        JSON.stringify(r.respostas)
+    ];
+
+    try {
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                acao: "salvarOuAtualizar",
+                valores: JSON.stringify(valores)
+            })
+        });
+
+    } catch (erro) {
+        console.error("Erro ao salvar ronda em andamento", erro);
+    }
+}
+
+async function salvarNaPlanilha(aba, valores) {
+    try {
+        await fetch(API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ aba: aba, valores: valores })
+        });
+        console.log(`✅ Dados enviados para aba ${aba}`);
+    } catch(e) {
+        console.error("Erro ao salvar na planilha:", e);
+    }
+}
+
+function registrarAcao(vId, isOk) {
+    let r = rondaEmCurso[vId];
+    if(!r || r.index >= 25) return;
+    
+    const hFim = document.getElementById(`h_fim_${vId}`).value;
+    if(!hFim) { alert("⚠️ Por favor, registre a HORA FINAL do ponto."); return; }
+
+    const desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
+const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo";
+    const hIni = document.getElementById(`h_ini_${vId}`).innerText;
+
+    const respostaAtual = { 
+        ponto: r.pontosOriginais[r.index], 
+        status: isOk ? "Conforme" : "Não Conforme", 
+        desvio: desvio, 
+        hIni: hIni, 
+        hFim: hFim 
+    };
+
+    r.respostas.push(respostaAtual);
+    r.index++;
+
+    salvarRondaEmAndamento(vId);
+    salvarEstadoTempoReal(vId);
+
+    // 🔹 Enviar ponto atual para planilha
+    salvarNaPlanilha("RondasEmAndamento", [
+        new Date().toLocaleString(),
+        vId,
+        r.num,
+        r.index,
+        r.op,
+        r.ron,
+        r.obs,
+        `${respostaAtual.ponto} | ${respostaAtual.status} | Motivo: ${motivo} | Desvio: ${desvio}`
+    ]);
+
+    if(r.index < 25) {
+        atualizarInterfaceRonda(vId);
+    } else {
+        document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
+        document.getElementById(`bar_${vId}`).style.width = "100%";
+        document.getElementById(`btn_fin_${vId}`).disabled = false;
+    }
+    document.getElementById(`h_fim_${vId}`).value = "";
+}
+async function removerRondaEmAndamento(vId) {
+
+    const r = rondaEmCurso[vId];
+    if (!r) return;
+
+    try {
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                acao: "remover",
+                cartao: r.num   // 🔥 agora envia o cartão correto
+            })
+        });
+
+    } catch (erro) {
+        console.error("Erro ao remover ronda em andamento", erro);
+    }
+}
+
+
+// SALVA UM REGISTRO NA PLANILHA GOOGLE
+async function salvarProgramacaoNaPlanilha(registro) {
+    const valores = [
+        new Date().toLocaleString(), // timestamp
+        registro.ponto,
+        registro.hora,
+        registro.obs || ""
+    ];
+    await apiPost("Programacao", valores);
+    console.log("✅ Programação sincronizada:", valores);
+}
+
+// ADICIONA HORÁRIO NA ABA E SINCRONIZA
+function adicionarHorario() {
+    const inputPonto = document.getElementById('prog_ponto');
+    const inputHora = document.getElementById('prog_hora');
+
+    const ponto = inputPonto.value.trim();
+    const hora = inputHora.value;
+
+    if(!ponto || !hora) { 
+        alert("⚠️ Preencha os campos!"); 
+        return; 
+    }
+
+    const registro = { ponto, hora, obs: "" };
+
+    // 1️⃣ salva localmente
+    db.programacao.push(registro);
+    db.programacao.sort((a,b) => a.hora.localeCompare(b.hora));
+    salvarLocal();
+sincronizarComPlanilha();
+    // 2️⃣ envia para a planilha (sincronização)
+    salvarProgramacaoNaPlanilha(registro);
+
+    // 3️⃣ renderiza na tabela
+    renderizarProgramacao();
+
+    // limpa inputs
+    inputPonto.value = "";
+    inputHora.value = "";
+}
+
+// RENDERIZA OS HORÁRIOS CADASTRADOS
+function renderizarProgramacao() {
+    const corpo = document.getElementById('corpoProgramacao');
+    if(!corpo) return;
+
+    corpo.innerHTML = db.programacao.length === 0 
+        ? '<tr><td colspan="3" style="text-align:center;">Nenhum horário agendado</td></tr>' 
+        : db.programacao.map((p, i) => `
+            <tr>
+                <td style="font-weight:bold; color:var(--samarco-blue);">${p.hora}</td>
+                <td>${p.ponto}</td>
+                <td>
+                    <button onclick="removerProgramacao(${i})" 
+                        style="color:var(--danger); border:1px solid var(--danger); background:none; cursor:pointer; padding:5px 10px; border-radius:4px;">
+                        Remover
+                    </button>
+                </td>
+            </tr>`).join('');
+}
+
+
+</script>
+
+
+</body>
+</html>
