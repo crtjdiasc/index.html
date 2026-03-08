@@ -350,7 +350,7 @@ restaurarBancoLocal();
         setInterval(verificarAlarmes, 10000);
         atualizarDash();
         sincronizarComPlanilha();
-setInterval(sincronizarComPlanilha, 30000);
+setInterval(sincronizarComPlanilha, 8000);
 
 
     });
@@ -361,62 +361,76 @@ setInterval(sincronizarComPlanilha, 30000);
         const data = await response.json();
 
         // Limpa tudo antes de recriar
-        const novoDB = {
+       const novoDB = {
     cartoes: [],
     operadores: [],
     rondantes: [],
     locais: [],
+    supervisores: [],
+    placas: [],
+    motivos: [],
     finalizados: [],
-    programacao: [...db.programacao] // CLONA a programação local
+    programacao: [...db.programacao]
 };
 
         // ==========================
         // LENDO ABA CADASTROS
         // ==========================
-        if (data.Cadastros) {
+       if (data.Cadastros) {
 
-            data.Cadastros.forEach(linha => {
+    data.Cadastros.forEach(linha => {
 
-               const tipo = linha[1];
-const nome = linha[2];
+        const tipo = linha[1];
+        const nome = linha[2];
 
-if (tipo === "Operador") {
-    novoDB.operadores.push(nome);
-}
+        if (!tipo || !nome) return;
 
-else if (tipo === "Rondante") {
-    novoDB.rondantes.push(nome);
-}
-
-else if (tipo === "Desvio" || tipo === "Redirecionamento") {
-    novoDB.locais.push(nome);
-}
-
-
-
-             // CARTÕES
-else if (tipo && tipo.toUpperCase().includes("CART")) {
-
-    const numero = linha[2];      // coluna número do cartão
-    const veiculo = linha[3];     // coluna veículo
-    const pontosRaw = linha[4];   // coluna pontos
-
-    const pontos = pontosRaw
-        ? pontosRaw.split("|")
-        : [];
-
-   novoDB.cartoes.push({
-    num: numero,
-    veiculo: veiculo,
-    pontos: pontos
-});
-}
-
-// LOCAIS (Desvio e Redirecionamento)
-
-            });
+        if (tipo === "Operador") {
+            novoDB.operadores.push(nome);
         }
 
+        else if (tipo === "Rondante") {
+            novoDB.rondantes.push(nome);
+        }
+
+        else if (tipo === "Supervisor") {
+            novoDB.supervisores.push(nome);
+        }
+
+        else if (tipo === "Placa") {
+            novoDB.placas.push(nome);
+        }
+
+        else if (tipo === "Motivo") {
+            novoDB.motivos.push(nome);
+        }
+
+        else if (tipo === "Desvio" || tipo === "Redirecionamento") {
+            novoDB.locais.push(nome);
+        }
+
+        // CARTÕES
+        else if (tipo.toUpperCase().includes("CART")) {
+
+            const numero = linha[2];
+            const veiculo = linha[3];
+            const pontosRaw = linha[4];
+
+            const pontos = pontosRaw
+                ? pontosRaw.split("|")
+                : [];
+
+            novoDB.cartoes.push({
+                num: numero,
+                veiculo: veiculo,
+                pontos: pontos
+            });
+
+        }
+
+    });
+
+}
        // ==========================
 // FINALIZADOS LIMPOS E FILTRADOS
 // ==========================
@@ -448,6 +462,35 @@ db.operadores = novoDB.operadores;
 db.rondantes = novoDB.rondantes;
 db.locais = novoDB.locais;
 db.finalizados = novoDB.finalizados;
+db.supervisores = novoDB.supervisores;
+db.placas = novoDB.placas;
+db.motivos = novoDB.motivos;
+if (data.RondasEmAndamento) {
+
+    rondaEmCurso = {};
+
+    data.RondasEmAndamento.forEach(l => {
+
+        const vId = l[1];
+
+        if (!vId) return;
+
+        rondaEmCurso[vId] = {
+            num: l[2],
+            index: parseInt(l[3] || 0),
+            op: l[4],
+            ron: l[5],
+            respostas: JSON.parse(l[6] || "[]"),
+            pontosOriginais: JSON.parse(l[7] || "[]")
+        };
+
+    });
+
+}
+
+
+
+
 salvarLocal();
 // ATUALIZA A TELA
         popularTodosSelects();
@@ -735,8 +778,9 @@ db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
         rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
         rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
         rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
-rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
+rrondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
 rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
+rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
         localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
 salvarLocal();
     }
@@ -748,7 +792,9 @@ salvarLocal();
             document.getElementById(`sel_cartao_${vId}`).value = r.num;
             document.getElementById(`sel_op_${vId}`).value = r.op || "";
             document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
-            document.getElementById(`obs_${vId}`).value = r.obs || "";
+          document.getElementById(`sel_sup_${vId}`).value = r.sup || "";
+document.getElementById(`sel_placa_${vId}`).value = r.placa || ""; 
+ document.getElementById(`obs_${vId}`).value = r.obs || "";
             
             // Sincronizar pontos já lançados
            
@@ -868,35 +914,22 @@ detalhesFormatados
     const corpo = document.getElementById('corpoFinalizados');
     if(!corpo) return;
 
-    corpo.innerHTML = db.finalizados.map((r, index) => `
-        <tr>
-            <td>${r[0]}</td>
-            <td>${r[1]}</td>
-            <td>${r[2]}</td>
-            <td>${r[3]}</td>
-            <td>${r[4]}</td>
-            <td style="font-weight:bold; color:${parseFloat(r[5]) >= 90 ? 'var(--success)' : 'var(--danger)'}">
-                ${r[5]}
-            </td>
-            <td style="font-size:0.8rem;">${r[6]}</td>
-            <td>
-    <button onclick="gerarPDFIndividual(${index})"
-        style="background:#004a80;color:white;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;margin-bottom:4px;">
-        PDF
-    </button>
-
-    <button onclick="excluirCartaoFinalizado(${index})"
-        style="background: var(--danger); 
-               color:white; 
-               border:none; 
-               padding:6px 10px; 
-               border-radius:4px; 
-               cursor:pointer;">
-        Excluir
-    </button>
+   corpo.innerHTML = db.finalizados.map((r, index) => `
+<tr>
+<td>${r[0]}</td>
+<td>${r[1]}</td>
+<td>${r[2]}</td>
+<td>${r[4]}</td>
+<td>${r[5]}</td>
+<td style="font-weight:bold;color:${parseFloat(r[7])>=90?'var(--success)':'var(--danger)'}">
+${r[7]}
 </td>
-        </tr>
-    `).join('');
+<td style="font-size:0.8rem;">${r[8]}</td>
+<td>
+<button onclick="gerarPDFIndividual(${index})">PDF</button>
+</td>
+</tr>
+`).join('');
 }
 
     function limparHistorico() {
