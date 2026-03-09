@@ -269,6 +269,21 @@ LIMPEZA TOTAL REAL
 
     <div id="container-veiculos"></div>
 
+<div style="text-align:center;margin:15px;">
+<button onclick="sincronizarTudo()" 
+style="
+background:#004a80;
+color:white;
+padding:12px 25px;
+border:none;
+border-radius:6px;
+font-weight:bold;
+cursor:pointer;
+">
+🔄 ATUALIZAR SISTEMA
+</button>
+</div>
+
     <section id="aba-dashboard" class="tab-content">
         <div class="dash-grid">
             <div class="dash-card" style="background: var(--samarco-blue);">Rondas Mensais<h2 id="d_rondas">0</h2></div>
@@ -350,9 +365,12 @@ restaurarBancoLocal();
         setInterval(verificarAlarmes, 10000);
         atualizarDash();
         sincronizarComPlanilha();
-setInterval(sincronizarComPlanilha, 15000);
+setInterval(()=>{
 
+sincronizarComPlanilha();
+restaurarEstadoRondas();
 
+},5000);
     });
 
   async function sincronizarComPlanilha() {
@@ -801,6 +819,7 @@ rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
 rondaEmCurso[vId].desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
         localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
 salvarLocal();
+salvarRondaEmAndamento(vId);
     }
 
     function restaurarEstadoRondas() {
@@ -860,6 +879,7 @@ document.getElementById(`sel_placa_${vId}`).value = r.placa || "";
     obs: ""
 };
     salvarEstadoTempoReal(vId);
+salvarRondaEmAndamento(vId);
     atualizarInterfaceRonda(vId);
     document.getElementById(`btn_fin_${vId}`).disabled = true;
 }
@@ -873,6 +893,14 @@ document.getElementById(`ponto_anterior_${vId}`).innerText =
 `PONTO ANTERIOR: ${pontoAnterior}`;
         document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
         document.getElementById(`cont_ponto_${vId}`).innerText = `PONTO ${r.index + 1} / 25`;
+if(r.respostas && r.respostas.length > 0){
+
+let historico = montarHistoricoPontos(r.respostas);
+
+document.getElementById(`ponto_anterior_${vId}`).innerHTML =
+`<span style="color:red;font-weight:bold;">ÚLTIMO REGISTRO:</span><br>${historico}`;
+
+}
         document.getElementById(`bar_${vId}`).style.width = (r.index / 25 * 100) + "%";
         
         // Captura o horário de início do ponto no momento que ele aparece
@@ -1308,6 +1336,8 @@ function renderizarProgramacao() {
                 </td>
             </tr>`).join('');
 
+
+}
 function limparFormulario(vId){
 
 document.getElementById(`sel_cartao_${vId}`).value="";
@@ -1323,11 +1353,41 @@ document.getElementById(`sel_loc_ponto_${vId}`).value="";
 document.getElementById(`nome_ponto_${vId}`).innerText="AGUARDANDO SELEÇÃO";
 document.getElementById(`bar_${vId}`).style.width="0%";
 document.getElementById(`cont_ponto_${vId}`).innerText="PONTO 1 / 25";
+}
+
+function sincronizarTudo(){
+
+sincronizarComPlanilha();
+restaurarEstadoRondas();
+renderizarHistorico();
+atualizarDash();
+
+alert("✅ Sistema sincronizado com a planilha");
 
 }
 
 
+function montarHistoricoPontos(respostas){
+
+let lista="";
+
+respostas.forEach(p=>{
+
+lista+=`
+<div style="padding:3px;border-bottom:1px solid #333">
+Ponto: ${p.ponto}
+Status: ${p.status}
+Motivo: ${p.motivo || "-"}
+Desvio: ${p.desvio || "-"}
+</div>
+`;
+
+});
+
+return lista;
+
 }
+
 
 
 
