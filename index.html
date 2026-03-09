@@ -914,7 +914,7 @@ await removerRondaEmAndamento(vId);
     apiPost("CartoesFinalizados", valores);
 
     alert("Ronda Finalizada com Sucesso!");
-    location.reload(); // Recarrega para limpar os campos da tela
+   limparFormulario(vId); // Recarrega para limpar os campos da tela
 }
 
     async function apiPost(aba, valores) {
@@ -1218,7 +1218,12 @@ const respostaAtual = {
         document.getElementById(`bar_${vId}`).style.width = "100%";
         document.getElementById(`btn_fin_${vId}`).disabled = false;
     }
+
+// limpa apenas os campos de desvio após registrar o ponto
+document.getElementById(`sel_motivo_${vId}`).value = "";
+document.getElementById(`sel_loc_ponto_${vId}`).value = "";
     document.getElementById(`h_fim_${vId}`).value = "";
+
 }
 async function removerRondaEmAndamento(vId) {
 
@@ -1302,7 +1307,28 @@ function renderizarProgramacao() {
                     </button>
                 </td>
             </tr>`).join('');
+
+function limparFormulario(vId){
+
+document.getElementById(`sel_cartao_${vId}`).value="";
+document.getElementById(`sel_op_${vId}`).value="";
+document.getElementById(`sel_ron_${vId}`).value="";
+document.getElementById(`sel_sup_${vId}`).value="";
+document.getElementById(`sel_placa_${vId}`).value="";
+document.getElementById(`obs_${vId}`).value="";
+
+document.getElementById(`sel_motivo_${vId}`).value="";
+document.getElementById(`sel_loc_ponto_${vId}`).value="";
+
+document.getElementById(`nome_ponto_${vId}`).innerText="AGUARDANDO SELEÇÃO";
+document.getElementById(`bar_${vId}`).style.width="0%";
+document.getElementById(`cont_ponto_${vId}`).innerText="PONTO 1 / 25";
+
 }
+
+
+}
+
 
 
 </script>
