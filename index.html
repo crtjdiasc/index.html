@@ -370,7 +370,7 @@ setInterval(()=>{
 sincronizarComPlanilha();
 restaurarEstadoRondas();
 
-},5000);
+},8000);
     });
 
   async function sincronizarComPlanilha() {
@@ -825,27 +825,32 @@ salvarLocal();
 salvarRondaEmAndamento(vId);
     }
 
-    function restaurarEstadoRondas() {
-    ['V01', 'V02', 'V03', 'A02'].forEach(vId => {
-        const r = rondaEmCurso[vId];
-        if (r) {
-            document.getElementById(`sel_cartao_${vId}`).value = r.num;
-            document.getElementById(`sel_op_${vId}`).value = r.op || "";
-            document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
-          document.getElementById(`sel_sup_${vId}`).value = r.sup || "";
-document.getElementById(`sel_placa_${vId}`).value = r.placa || ""; 
- document.getElementById(`obs_${vId}`).value = r.obs || "";
-            
-            // Sincronizar pontos já lançados
-           
-            if (r.index < 25) atualizarInterfaceRonda(vId);
-            else {
-                document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
-                document.getElementById(`bar_${vId}`).style.width = "100%";
-                document.getElementById(`btn_fin_${vId}`).disabled = false;
-            }
-        }
-    });
+   function restaurarEstadoRondas() {
+
+['V01','V02','V03','A02'].forEach(vId => {
+
+const r = rondaEmCurso[vId];
+
+if (r) {
+
+document.getElementById(`sel_cartao_${vId}`).value = r.num;
+document.getElementById(`sel_op_${vId}`).value = r.op || "";
+document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
+document.getElementById(`sel_sup_${vId}`).value = r.sup || "";
+document.getElementById(`sel_placa_${vId}`).value = r.placa || "";
+document.getElementById(`obs_${vId}`).value = r.obs || "";
+
+/* 🔴 ADICIONE ISTO */
+
+document.getElementById(`sel_motivo_${vId}`).value = r.motivo || "";
+document.getElementById(`sel_loc_ponto_${vId}`).value = r.desvio || "";
+
+if (r.index < 25) atualizarInterfaceRonda(vId);
+
+}
+
+});
+
 }
 
    function iniciarSessaoRonda(vId) {
