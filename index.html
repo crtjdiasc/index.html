@@ -390,7 +390,7 @@ sincronizarComPlanilha();
     placas: [],
     motivos: [],
     finalizados: [],
-    programacao: [...db.programacao]
+    programacao: []
 };
 
         // ==========================
@@ -474,6 +474,26 @@ if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
 } else {
     novoDB.finalizados = [];
 }
+
+// ==========================
+// PROGRAMACAO
+// ==========================
+
+if (data.Programacao && Array.isArray(data.Programacao)) {
+
+    novoDB.programacao = data.Programacao.map(l => ({
+        data: l[0] || "",
+        hora: l[1] || "",
+        cartao: l[2] || "",
+        veiculo: l[3] || "",
+        operador: l[4] || "",
+        rondante: l[5] || "",
+        status: l[6] || "Pendente"
+    }));
+
+}
+
+
 renderizarHistorico();
 atualizarDash();
         
@@ -485,6 +505,9 @@ db.finalizados = novoDB.finalizados;
 db.supervisores = novoDB.supervisores;
 db.placas = novoDB.placas;
 db.motivos = novoDB.motivos;
+db.programacao = novoDB.programacao;
+
+renderizarProgramacao();
 if (data.RondasEmAndamento) {
 
     rondaEmCurso = {};
