@@ -521,15 +521,18 @@ popularTodosSelects();
 // restaura valores selecionados
 Object.keys(backupRonda).forEach(vId => {
 
+if(!rondaEmCurso[vId]) return;
+
+rondaEmCurso[vId].motivo = backupRonda[vId].motivo || "";
+rondaEmCurso[vId].desvio = backupRonda[vId].desvio || "";
+
 if(document.getElementById(`sel_motivo_${vId}`))
-document.getElementById(`sel_motivo_${vId}`).value = backupRonda[vId].motivo || "";
+document.getElementById(`sel_motivo_${vId}`).value = rondaEmCurso[vId].motivo;
 
 if(document.getElementById(`sel_loc_ponto_${vId}`))
-document.getElementById(`sel_loc_ponto_${vId}`).value = backupRonda[vId].desvio || "";
+document.getElementById(`sel_loc_ponto_${vId}`).value = rondaEmCurso[vId].desvio;
 
-});
-
-renderizarHistorico();
+});renderizarHistorico();
 atualizarDash();
 restaurarEstadoRondas();
 
@@ -1218,7 +1221,9 @@ const respostaAtual = {
 };
 
     r.respostas.push(respostaAtual);
-    r.index++;
+ if(r.index < 24){
+r.index++;
+}
 atualizarInterfaceRonda(vId);
 
     salvarRondaEmAndamento(vId);
@@ -1353,8 +1358,11 @@ document.getElementById(`sel_loc_ponto_${vId}`).value="";
 document.getElementById(`nome_ponto_${vId}`).innerText="AGUARDANDO SELEÇÃO";
 document.getElementById(`bar_${vId}`).style.width="0%";
 document.getElementById(`cont_ponto_${vId}`).innerText="PONTO 1 / 25";
-}
 
+document.getElementById(`h_ini_${vId}`).innerText="--:--:--";
+document.getElementById(`h_fim_${vId}`).value="";
+
+}
 function sincronizarTudo(){
 
 sincronizarComPlanilha();
