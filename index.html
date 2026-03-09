@@ -889,9 +889,10 @@ detalhesFormatados
     db.finalizados.push(valores);
     salvarLocal();
     
-    delete rondaEmCurso[vId];
-    localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
-   
+   delete rondaEmCurso[vId];
+localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+
+await removerRondaEmAndamento(vId);
     renderizarHistorico();
     
     // Tenta enviar para o Google Sheets
@@ -1035,7 +1036,7 @@ function gerarPDFIndividual(index) {
         document.getElementById('d_rondas').innerText = total;
 
         if(total > 0) {
-            const somaScore = finalizados.reduce((acc, curr) => acc + (parseFloat(curr[5]) || 0), 0);
+            const somaScore = finalizados.reduce((acc, curr) => acc + (parseFloat(curr[7]) || 0), 0);
             const media = (somaScore / total).toFixed(1);
             document.getElementById('d_conf').innerText = media + "%";
             
@@ -1178,16 +1179,19 @@ const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo
     salvarEstadoTempoReal(vId);
 
     // 🔹 Enviar ponto atual para planilha
-    salvarNaPlanilha("RondasEmAndamento", [
-        new Date().toLocaleString(),
-        vId,
-        r.num,
-        r.index,
-        r.op,
-        r.ron,
-        r.obs,
-        `${respostaAtual.ponto} | ${respostaAtual.status} | Motivo: ${motivo} | Desvio: ${desvio}`
-    ]);
+   salvarNaPlanilha("RondasEmAndamento", [
+    new Date().toLocaleString(),
+    vId,
+    r.num,
+    r.index,
+    r.op,
+    r.ron,
+    r.sup,
+    r.placa,
+    r.obs,
+    JSON.stringify(r.respostas),
+    JSON.stringify(r.pontosOriginais)
+]);
 
     if(r.index < 25) {
         atualizarInterfaceRonda(vId);
