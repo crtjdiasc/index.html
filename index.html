@@ -350,7 +350,7 @@ restaurarBancoLocal();
         setInterval(verificarAlarmes, 10000);
         atualizarDash();
         sincronizarComPlanilha();
-setInterval(sincronizarComPlanilha, 8000);
+setInterval(sincronizarComPlanilha, 15000);
 
 
     });
@@ -496,9 +496,23 @@ if (data.RondasEmAndamento) {
 
 salvarLocal();
 // ATUALIZA A TELA
-        popularTodosSelects();
-        renderizarHistorico();
-        atualizarDash();
+        const backupRonda = JSON.parse(JSON.stringify(rondaEmCurso));
+
+popularTodosSelects();
+
+// restaura valores selecionados
+Object.keys(backupRonda).forEach(vId => {
+
+if(document.getElementById(`sel_motivo_${vId}`))
+document.getElementById(`sel_motivo_${vId}`).value = backupRonda[vId].motivo || "";
+
+if(document.getElementById(`sel_loc_ponto_${vId}`))
+document.getElementById(`sel_loc_ponto_${vId}`).value = backupRonda[vId].desvio || "";
+
+});
+
+renderizarHistorico();
+atualizarDash();
 restaurarEstadoRondas();
 
         console.log("✅ Dados da planilha carregados no sistema");
@@ -784,6 +798,7 @@ db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
 rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
 rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
 rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
+rondaEmCurso[vId].desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
         localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
 salvarLocal();
     }
