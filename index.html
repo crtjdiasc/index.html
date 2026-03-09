@@ -475,14 +475,17 @@ if (data.RondasEmAndamento) {
 
         if (!vId) return;
 
-        rondaEmCurso[vId] = {
-            num: l[2],
-            index: parseInt(l[3] || 0),
-            op: l[4],
-            ron: l[5],
-            respostas: JSON.parse(l[6] || "[]"),
-            pontosOriginais: JSON.parse(l[7] || "[]")
-        };
+      rondaEmCurso[vId] = {
+    num: l[2],
+    index: parseInt(l[3] || 0),
+    op: l[4],
+    ron: l[5],
+    sup: l[6] || "",
+    placa: l[7] || "",
+    obs: l[8] || "",
+    respostas: JSON.parse(l[9] || "[]"),
+    pontosOriginais: JSON.parse(l[10] || "[]")
+};
 
     });
 
@@ -778,7 +781,7 @@ db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
         rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
         rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
         rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
-rrondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
+rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
 rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
 rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
         localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
@@ -1107,15 +1110,18 @@ async function salvarRondaEmAndamento(vId) {
     const r = rondaEmCurso[vId];
     if (!r) return;
 
-    const valores = [
-        r.dataInicio,
-        vId,
-        r.num,
-        r.index,
-        r.op || "",
-        r.ron || "",
-        JSON.stringify(r.respostas)
-    ];
+  const valores = [
+    r.dataInicio,
+    vId,
+    r.num,
+    r.index,
+    r.op || "",
+    r.ron || "",
+    r.sup || "",
+    r.placa || "",
+    r.obs || "",
+    JSON.stringify(r.respostas)
+];
 
     try {
         await fetch(API_URL, {
