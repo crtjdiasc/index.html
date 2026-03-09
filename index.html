@@ -1220,6 +1220,7 @@ const respostaAtual = {
 
     r.respostas.push(respostaAtual);
     r.index++;
+atualizarInterfaceRonda(vId);
 
     salvarRondaEmAndamento(vId);
     salvarEstadoTempoReal(vId);
@@ -1366,28 +1367,35 @@ alert("✅ Sistema sincronizado com a planilha");
 
 }
 
-
 function montarHistoricoPontos(respostas){
 
-let html = "";
+let html="";
 
-respostas.forEach((p, i)=>{
+respostas.forEach((p,i)=>{
 
 let ultimo = i === respostas.length - 1;
 
 let icone = ultimo ? "🔴" : "✔";
 
-let textoAtual = ultimo ? " (ATUAL)" : "";
+let atual = ultimo ? " (ATUAL)" : "";
 
-html += `
+html+=`
 <div style="
 padding:4px;
-color:${ultimo ? "red" : "white"};
-font-weight:${ultimo ? "bold" : "normal"};
+color:${ultimo ? "red":"white"};
+font-weight:${ultimo ? "bold":"normal"};
 ">
-${icone} Ponto ${String(i+1).padStart(2,"0")}
-${p.ponto ? " - " + p.ponto : ""}
-${textoAtual}
+
+${icone} Ponto ${String(i+1).padStart(2,"0")} - ${p.ponto} ${atual}
+
+<div style="font-size:12px;color:#aaa">
+
+Início: ${p.hIni}  
+Final: ${p.hFim}  
+Status: ${p.status}
+
+</div>
+
 </div>
 `;
 
@@ -1395,11 +1403,30 @@ ${textoAtual}
 
 return html;
 
+}function separarDetalhes(texto){
+
+if(!texto) return {
+local:"",
+inicio:"",
+final:"",
+status:""
+};
+
+let partes = texto.split("|");
+
+let local = partes[0]?.trim() || "";
+let inicio = partes[1]?.replace("Início","").trim() || "";
+let final = partes[2]?.replace("Final","").trim() || "";
+let status = partes[3]?.trim() || "";
+
+return {
+local,
+inicio,
+final,
+status
+};
 
 }
-
-
-
 
 </script>
 
