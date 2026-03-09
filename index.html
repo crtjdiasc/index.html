@@ -493,7 +493,7 @@ if (data.RondasEmAndamento) {
 
         if (!vId) return;
 
-      rondaEmCurso[vId] = {
+     rondaEmCurso[vId] = {
     num: l[2],
     index: parseInt(l[3] || 0),
     op: l[4],
@@ -501,6 +501,8 @@ if (data.RondasEmAndamento) {
     sup: l[6] || "",
     placa: l[7] || "",
     obs: l[8] || "",
+    motivo: l[11] || "",
+    desvio: l[12] || "",
     respostas: JSON.parse(l[9] || "[]"),
     pontosOriginais: JSON.parse(l[10] || "[]")
 };
@@ -1172,9 +1174,10 @@ const valores = [
     r.placa || "",
     r.obs || "",
     JSON.stringify(r.respostas),
-    JSON.stringify(r.pontosOriginais)
-];
-    try {
+    JSON.stringify(r.pontosOriginais),
+    r.motivo || "",
+    r.desvio || ""
+];  try {
         await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
