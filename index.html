@@ -475,28 +475,26 @@ if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
     novoDB.finalizados = [];
 }
 
-// ==========================
-// PROGRAMACAO
-// ==========================
 
-if (data.Programacao && Array.isArray(data.Programacao)) {
-
-    novoDB.programacao = data.Programacao.map(l => ({
-        data: l[0] || "",
-        hora: l[1] || "",
-        cartao: l[2] || "",
-        veiculo: l[3] || "",
-        operador: l[4] || "",
-        rondante: l[5] || "",
-        status: l[6] || "Pendente"
-    }));
-
-}
 
 
 renderizarHistorico();
 atualizarDash();
         
+// ==========================
+// PROGRAMACAO
+// ==========================
+if (data.Programacao && Array.isArray(data.Programacao)) {
+
+    novoDB.programacao = data.Programacao.map(l => ({
+        ponto: l[1] || "",
+        hora: l[2] || "",
+        obs: l[3] || ""
+    }));
+
+}
+
+
 db.cartoes = novoDB.cartoes;
 db.operadores = novoDB.operadores;
 db.rondantes = novoDB.rondantes;
@@ -505,9 +503,8 @@ db.finalizados = novoDB.finalizados;
 db.supervisores = novoDB.supervisores;
 db.placas = novoDB.placas;
 db.motivos = novoDB.motivos;
-db.programacao = novoDB.programacao;
-
-renderizarProgramacao();
+db.programacao = novoDB.programacao;   // ⭐ ESTA LINHA FALTAVA
+renderizarProgramacao();     
 if (data.RondasEmAndamento) {
 
     rondaEmCurso = {};
