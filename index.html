@@ -350,16 +350,19 @@ function confirmarSenha() {
         const agora = new Date();
         elRelogio.innerText = agora.toLocaleString('pt-BR');
     }
+document.addEventListener('DOMContentLoaded', () => {
 
-    document.addEventListener('DOMContentLoaded', () => {
 restaurarBancoLocal();
-     atualizarRelogio();
-        setInterval(atualizarRelogio, 1000);
-        renderizarAbasVeiculos();
-        popularTodosSelects();
-        restaurarEstadoRondas();
+atualizarRelogio();
+setInterval(atualizarRelogio, 1000);
 
-          
+renderizarAbasVeiculos();
+popularTodosSelects();
+
+sincronizarComPlanilha();
+restaurarEstadoRondas();
+
+});          
  renderizarProgramacao();
         renderizarHistorico();
         setInterval(verificarAlarmes, 10000);
@@ -368,10 +371,9 @@ restaurarBancoLocal();
 setInterval(()=>{
 
 sincronizarComPlanilha();
-restaurarEstadoRondas();
 
-},8000);
-    });
+},15000);  
+  });
 
   async function sincronizarComPlanilha() {
     try {
