@@ -1153,8 +1153,7 @@ async function salvarRondaEmAndamento(vId) {
 
     const r = rondaEmCurso[vId];
     if (!r) return;
-
-  const valores = [
+const valores = [
     r.dataInicio,
     vId,
     r.num,
@@ -1164,9 +1163,9 @@ async function salvarRondaEmAndamento(vId) {
     r.sup || "",
     r.placa || "",
     r.obs || "",
-    JSON.stringify(r.respostas)
+    JSON.stringify(r.respostas),
+    JSON.stringify(r.pontosOriginais)
 ];
-
     try {
         await fetch(API_URL, {
             method: "POST",
