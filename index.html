@@ -871,7 +871,7 @@ document.getElementById(`ponto_anterior_${vId}`).innerText =
     
     // INCLUINDO O DESVIO NA STRING DE DETALHES
     const detalhesFormatados = r.respostas.map(x => 
-        `${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Desvio: ${x.desvio}`
+       `${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Motivo: ${x.motivo} | Desvio: ${x.desvio}`
     ).join(' || ');
 
     const valores = [
@@ -1164,13 +1164,16 @@ function registrarAcao(vId, isOk) {
 const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo";
     const hIni = document.getElementById(`h_ini_${vId}`).innerText;
 
-    const respostaAtual = { 
-        ponto: r.pontosOriginais[r.index], 
-        status: isOk ? "Conforme" : "Não Conforme", 
-        desvio: desvio, 
-        hIni: hIni, 
-        hFim: hFim 
-    };
+   const pontoAtual = r.pontosOriginais[r.index];
+
+const respostaAtual = {
+    ponto: pontoAtual,
+    status: isOk ? "Conforme" : "Não Conforme",
+    motivo: motivo,
+    desvio: desvio,
+    hIni: hIni,
+    hFim: hFim
+};
 
     r.respostas.push(respostaAtual);
     r.index++;
