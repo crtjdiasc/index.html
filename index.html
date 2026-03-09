@@ -1369,22 +1369,32 @@ alert("✅ Sistema sincronizado com a planilha");
 
 function montarHistoricoPontos(respostas){
 
-let lista="";
+let html = "";
 
-respostas.forEach(p=>{
+respostas.forEach((p, i)=>{
 
-lista+=`
-<div style="padding:3px;border-bottom:1px solid #333">
-Ponto: ${p.ponto}
-Status: ${p.status}
-Motivo: ${p.motivo || "-"}
-Desvio: ${p.desvio || "-"}
+let ultimo = i === respostas.length - 1;
+
+let icone = ultimo ? "🔴" : "✔";
+
+let textoAtual = ultimo ? " (ATUAL)" : "";
+
+html += `
+<div style="
+padding:4px;
+color:${ultimo ? "red" : "white"};
+font-weight:${ultimo ? "bold" : "normal"};
+">
+${icone} Ponto ${String(i+1).padStart(2,"0")}
+${p.ponto ? " - " + p.ponto : ""}
+${textoAtual}
 </div>
 `;
 
 });
 
-return lista;
+return html;
+
 
 }
 
