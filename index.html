@@ -353,28 +353,28 @@ function confirmarSenha() {
 document.addEventListener('DOMContentLoaded', () => {
 
 restaurarBancoLocal();
+
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
 renderizarAbasVeiculos();
 popularTodosSelects();
 
+renderizarProgramacao();
+renderizarHistorico();
+
 sincronizarComPlanilha();
 restaurarEstadoRondas();
 
-    
- renderizarProgramacao();
-        renderizarHistorico();
-        setInterval(verificarAlarmes, 10000);
-        atualizarDash();
-        sincronizarComPlanilha();
+setInterval(verificarAlarmes, 10000);
+
 setInterval(()=>{
 
 sincronizarComPlanilha();
 
-},15000);  
-  });
+},15000);
 
+});
   async function sincronizarComPlanilha() {
     try {
         const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
