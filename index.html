@@ -1250,11 +1250,19 @@ const respostaAtual = {
     hFim: hFim
 };
 
-    r.respostas.push(respostaAtual);
- if(r.index < 24){
-r.index++;
+   r.respostas.push(respostaAtual);
+
+// avança somente até o ponto 25
+if (r.index < r.pontosOriginais.length - 1) {
+    r.index++;
+    atualizarInterfaceRonda(vId);
+} else {
+    // terminou a ronda
+    document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
+    document.getElementById(`bar_${vId}`).style.width = "100%";
+    document.getElementById(`cont_ponto_${vId}`).innerText = "PONTO 25 / 25";
+    document.getElementById(`btn_fin_${vId}`).disabled = false;
 }
-atualizarInterfaceRonda(vId);
 
     salvarRondaEmAndamento(vId);
     salvarEstadoTempoReal(vId);
@@ -1470,3 +1478,4 @@ status
 
 </body>
 </html>
+
