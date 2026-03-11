@@ -370,8 +370,34 @@ carregarCartoesSupabase();
 popularTodosSelects();
 
 carregarRondasSupabase();
+
+/* 🔴 SINCRONIZAÇÃO EM TEMPO REAL ENTRE COMPUTADORES */
+
+supabaseClient
+.channel('rondas-realtime')
+.on(
+'postgres_changes',
+{
+event: '*',
+schema: 'public',
+table: 'rondas'
+},
+payload => {
+
+console.log("Atualização recebida:", payload);
+
+carregarRondasSupabase(); 
+restaurarEstadoRondas();
+
+}
+)
+.subscribe();
+
+/* 🔴 FIM DA SINCRONIZAÇÃO */
+
 carregarProgramacaoSupabase();
 carregarCadastrosSupabase();
+
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
@@ -379,18 +405,11 @@ renderizarAbasVeiculos();
 renderizarProgramacao();
 renderizarHistorico();
 
-// sincronizarComPlanilha();
 restaurarEstadoRondas();
 
 setInterval(verificarAlarmes, 10000);
 
-// setInterval(()=>{
-
-// sincronizarComPlanilha();
-
-// },60000);
-});
- 
+}); 
 function limpezaForcadaTotal() {
 
     if (!confirmarSenha()) return;
@@ -447,12 +466,24 @@ await carregarProgramacaoSupabase();
 
 }
 
-    function verificarAlarmes() {
-        const agora = new Date();
-        const horaAtual = agora.getHours().toString().padStart(2, '0') + ":" + agora.getMinutes().toString().padStart(2, '0');
-        const alarmePendente = db.programacao.find(p => p.hora === horaAtual);
-        if (alarmePendente && ultimoAlarmeConfirmado !== horaAtual) { dispararAlerta(alarmePendente.ponto, horaAtual); }
-    }
+    function verificarAlarmes(){
+
+const agora = new Date();
+const horaAtual =
+agora.getHours().toString().padStart(2,'0') + ":" +
+agora.getMinutes().toString().padStart(2,'0');
+
+db.programacao.forEach(p => {
+
+if(p.hora === horaAtual && ultimoAlarmeConfirmado !== p.hora){
+
+dispararAlerta(p.ponto,p.hora);
+
+}
+
+});
+
+}
 
     function dispararAlerta(ponto, hora) {
         document.getElementById('txtAlarmePonto').innerText = `PONTO: ${ponto}`;
@@ -1253,27 +1284,6 @@ async function enviarCartaoPlanilha() {
 
     alert("✅ Cartão salvo com sucesso!");
 }
-async function carregarCartoesSupabase(){
-
-const { data, error } = await supabaseClient
-.from("cartoes")
-.select("*");
-
-if(error){
-console.log("Erro ao carregar cartões:", error);
-return;
-}
-
-db.cartoes = data.map(c => ({
-num: c.numero,
-veiculo: c.veiculo,
-pontos: c.pontos
-}));
-
-popularTodosSelects();
-
-}
-
 async function carregarProgramacaoSupabase(){
 
 const { data, error } = await supabaseClient
@@ -1380,21 +1390,63 @@ function iniciarSessaoRonda(vId) {
     salvarEstadoTempoReal(vId);
 }
 
-async function carregarCartoesSupabase() {
-    const { data, error } = await supabaseClient
-        .from("cartoes")
-        .select("*");
-    
-    if(error){
-        console.error("Erro ao carregar cartões:", error);
-        return;
-    }
-    
-    db.cartoes = data.map(c => ({
-        num: c.numero,
-        veiculo: c.veiculo,
-        pontos: JSON.parse(c.pontos)
-    }));
+async function carregarCartoesSupabase(){
+
+const { data, error } = await supabaseClient
+.from("cartoes")
+.select("*")
+.order("numero",{ascending:true});
+
+if(error){
+console.log("Erro ao carregar cartões:", error);
+return;
+}
+
+db.cartoes = data.map(c => ({
+num: c.numero,
+veiculo: c.veiculo,
+pontos: JSON.parse(c.pontos)
+}));
+
+popularTodosSelects();
+
+}async function salvarRondaEmAndamento(vId){
+
+const r = rondaEmCurso[vId];
+
+if(!r) return;
+
+await supabaseClient
+.from("rondas_ativas")
+.upsert([{
+viatura: vId,
+cartao: r.num,
+operador: r.op,
+rondante: r.ron,
+supervisor: r.sup,
+placa: r.placa,
+observacao: r.obs,
+indice: r.index,
+dados: JSON.stringify(r)
+}]);
+
+}
+
+
+async function carregarRondasAtivas(){
+
+const { data } = await supabaseClient
+.from("rondas_ativas")
+.select("*");
+
+data.forEach(r=>{
+
+rondaEmCurso[r.viatura] = JSON.parse(r.dados);
+
+});
+
+restaurarEstadoRondas();
+
 }
 
 </script>
@@ -1402,5 +1454,4 @@ async function carregarCartoesSupabase() {
 
 </body>
 </html>
-
 
