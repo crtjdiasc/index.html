@@ -368,6 +368,9 @@ document.addEventListener('DOMContentLoaded', () => {
 restaurarBancoLocal();
 
 carregarRondasSupabase();
+carregarCartoesSupabase();
+carregarProgramacaoSupabase();
+carregarCadastrosSupabase();
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
@@ -533,7 +536,12 @@ else db.locais.push(nome);
         popularTodosSelects();
         alert(`${tipo} cadastrado!`);
         document.getElementById('cad_aux_nome').value = "";
-        apiPost("Cadastros", [new Date().toLocaleString(), tipo, nome]);
+        aawait supabaseClient
+.from("cadastros")
+.insert([{
+tipo: tipo,
+nome: nome
+}]);
     }
 
     function renderizarAbasVeiculos() {
@@ -1270,6 +1278,81 @@ criado_em: new Date().toISOString()
 if(error){
 console.log("Erro ao salvar programação:", error);
 }
+
+}
+
+async function carregarCartoesSupabase(){
+
+const { data, error } = await supabaseClient
+.from("cartoes")
+.select("*");
+
+if(error){
+console.log("Erro ao carregar cartões:", error);
+return;
+}
+
+db.cartoes = data.map(c => ({
+num: c.numero,
+veiculo: c.veiculo,
+pontos: c.pontos
+}));
+
+popularTodosSelects();
+
+}
+
+async function carregarProgramacaoSupabase(){
+
+const { data, error } = await supabaseClient
+.from("programacao")
+.select("*")
+.order("hora",{ascending:true});
+
+if(error){
+console.log("Erro ao carregar programação:", error);
+return;
+}
+
+db.programacao = data.map(p => ({
+ponto: p.ponto,
+hora: p.hora
+}));
+
+renderizarProgramacao();
+
+}
+
+async function carregarCadastrosSupabase(){
+
+const { data, error } = await supabaseClient
+.from("cadastros")
+.select("*");
+
+if(error){
+console.log("Erro cadastros:", error);
+return;
+}
+
+db.operadores = [];
+db.rondantes = [];
+db.supervisores = [];
+db.placas = [];
+db.locais = [];
+db.motivos = [];
+
+data.forEach(c=>{
+
+if(c.tipo==="Operador") db.operadores.push(c.nome);
+else if(c.tipo==="Rondante") db.rondantes.push(c.nome);
+else if(c.tipo==="Supervisor") db.supervisores.push(c.nome);
+else if(c.tipo==="Placa") db.placas.push(c.nome);
+else if(c.tipo==="Motivo") db.motivos.push(c.nome);
+else db.locais.push(c.nome);
+
+});
+
+popularTodosSelects();
 
 }
 
