@@ -727,70 +727,21 @@ if (r.index < 25) atualizarInterfaceRonda(vId);
 
 function atualizarInterfaceRonda(vId) {
     const r = rondaEmCurso[vId];
-    if (!r || !r.pontosOriginais) return;
+    if (!r) return;
 
     const pontoAtual = r.pontosOriginais[r.index];
 
     document.getElementById(`nome_ponto_${vId}`).innerText = pontoAtual;
     document.getElementById(`cont_ponto_${vId}`).innerText = `${r.index + 1} / ${r.pontosOriginais.length}`;
-
-    const progress = ((r.index) / r.pontosOriginais.length) * 100;
-    document.getElementById(`bar_${vId}`).style.width = `${progress}%`;
-
+    document.getElementById(`bar_${vId}`).style.width = `${((r.index+1)/r.pontosOriginais.length)*100}%`;
     document.getElementById(`h_ini_${vId}`).innerText = r.dataInicio;
     document.getElementById(`h_fim_${vId}`).value = "";
+    document.getElementById(`sel_motivo_${vId}`).value = "";
+    document.getElementById(`sel_loc_ponto_${vId}`).value = "";
 
-    document.getElementById(`sel_motivo_${vId}`).value = r.motivo || "";
-    document.getElementById(`sel_loc_ponto_${vId}`).value = r.desvio || "";
-
+    // habilita botão apenas no último ponto
     document.getElementById(`btn_fin_${vId}`).disabled = (r.index < r.pontosOriginais.length - 1);
-}    const pontoAtual = ronda.pontosOriginais[ronda.index] || "---";
-
-    document.getElementById(`painelPonto_${vId}`).innerText = pontoAtual;
-    document.getElementById(`contadorPonto_${vId}`).innerText = `${ronda.index + 1}/${ronda.pontosOriginais.length}`;
-    document.getElementById(`horaInicio_${vId}`).innerText = ronda.dataInicio;
-    document.getElementById(`horaFinal_${vId}`).value = "";
-    document.getElementById(`motivo_${vId}`).value = ronda.motivo || "";
-    document.getElementById(`desvio_${vId}`).value = ronda.desvio || "";
-    document.getElementById(`obs_${vId}`).value = ronda.obs || "";
-    document.getElementById(`sup_${vId}`).value = ronda.sup || "";
-
-    // Botão FINALIZAR habilitado apenas no último ponto
-    document.getElementById(`btn_fin_${vId}`).disabled = (ronda.index + 1 < ronda.pontosOriginais.length);
 }
-
-
-
-
-async function salvarCartaoFinalizadoSupabase(finalizado) {
-    // finalizado = [
-    // 0: data/hora, 1: veiculo, 2: cartao, 3: placa, 4: operador, 5: rondante, 6: supervisor, 7: score, 8: detalhes
-    // ]
-
-    const registro = {
-        data_hora: finalizado[0],
-        veiculo: finalizado[1],
-        cartao: finalizado[2],
-        placa: finalizado[3],
-        operador: finalizado[4],
-        rondante: finalizado[5],
-        supervisor: finalizado[6],
-        score: finalizado[7],
-        detalhes: finalizado[8]
-    };
-
-    const { data, error } = await supabaseClient
-        .from("cartoes_finalizados") // 🔹 nome da tabela criada
-        .insert([registro]);
-
-    if (error) {
-        console.error("❌ Erro ao salvar cartão finalizado:", error);
-    } else {
-        console.log("✅ Cartão finalizado salvo no Supabase", data);
-    }
-}
-
-
 
    async function finalizarRonda(vId) {
     const r = rondaEmCurso[vId];
@@ -1401,33 +1352,34 @@ async function salvarCartaoFinalizadoSupabase(finalizado) {
 }
 
 function iniciarSessaoRonda(vId) {
-    const selCartao = document.getElementById(`sel_cartao_${vId}`);
-    const cartaoNum = selCartao.value;
-    if (!cartaoNum) return alert("Selecione um cartão!");
+    const selCartao = document.getElementById(`sel_cartao_${vId}`).value;
+    if (!selCartao) return;
 
-    // Busca o cartão no DB
-    const cartao = db.cartoes.find(c => c.num === cartaoNum && c.veiculo === vId.replace('V','VICTOR '));
-    if (!cartao) return alert("Cartão não encontrado!");
+    const cartao = db.cartoes.find(c => c.num === selCartao);
+    if (!cartao || !cartao.pontos || cartao.pontos.length === 0) {
+        alert("Cartão sem pontos cadastrados!");
+        return;
+    }
 
-    // Inicializa a ronda no storage
     rondaEmCurso[vId] = {
-        num: cartao.num,
-        pontosOriginais: cartao.pontos, // array de 25 pontos
-        index: 0,
-        respostas: [],
-        dataInicio: new Date().toLocaleTimeString(),
+        num: selCartao,
         op: document.getElementById(`sel_op_${vId}`).value || "",
         ron: document.getElementById(`sel_ron_${vId}`).value || "",
         sup: document.getElementById(`sel_sup_${vId}`).value || "",
         placa: document.getElementById(`sel_placa_${vId}`).value || "",
+        obs: document.getElementById(`obs_${vId}`).value || "",
         motivo: "",
         desvio: "",
-        obs: document.getElementById(`obs_${vId}`).value || ""
+        index: 0,
+        dataInicio: new Date().toLocaleTimeString(),
+        pontosOriginais: [...cartao.pontos], // garante os 25 pontos
+        respostas: []
     };
 
-    salvarRondaEmAndamento(vId);
     atualizarInterfaceRonda(vId);
+    salvarEstadoTempoReal(vId);
 }
+
 async function carregarCartoesSupabase() {
     const { data, error } = await supabaseClient
         .from("cartoes")
@@ -1450,4 +1402,5 @@ async function carregarCartoesSupabase() {
 
 </body>
 </html>
+
 
