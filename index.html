@@ -18,6 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
     <style>
         :root {
@@ -302,6 +303,15 @@ cursor:pointer;
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbxpvyfuDMihL2g7w3nPEcp1pwbMNgpOMl9uYTxFzeL8RWUMqp3_bwZZNCFPeM7tke3dvg/exec";
+
+const SUPABASE_URL = " https://uzrhxvecfamkthujialt.supabase.co";
+const SUPABASE_KEY = " sb_publishable_sAFbGQn2k72FsBaxySLLcw_Jgcn27cY";
+
+const supabase = window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
 
     let db = {
     cartoes: [],
@@ -1254,6 +1264,24 @@ const respostaAtual = {
 
    r.respostas.push(respostaAtual);
 
+salvarRondaSupabase({
+    timestamp: new Date().toISOString(),
+    viatura: r.num,
+    cartao: r.num,
+    ponto: respostaAtual.ponto,
+    operador: r.op,
+    rondante: r.ron,
+    supervisor: r.sup,
+    placa: r.placa,
+    observacao: r.obs,
+    local: respostaAtual.local || "",
+    inicio: respostaAtual.inicio || "",
+    final: respostaAtual.final || "",
+    status: respostaAtual.status || "",
+    motivo: respostaAtual.motivo || "",
+    desvio: respostaAtual.desvio || ""
+});
+
 // avança somente até o ponto 25
 if (r.index < r.pontosOriginais.length - 1) {
     r.index++;
@@ -1473,6 +1501,18 @@ inicio,
 final,
 status
 };
+
+async function salvarRondaSupabase(dados){
+
+    const { data, error } = await supabase
+    .from("rondas")
+    .insert([dados]);
+
+    if(error){
+        console.log("❌ Erro ao salvar:", error);
+    }else{
+        console.log("✅ Ronda salva no banco");
+    }
 
 }
 
