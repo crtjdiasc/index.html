@@ -1091,9 +1091,9 @@ const { error } = await supabaseClient
 .from("programacao")
 .insert([{
 ponto: ponto,
-hora: hora,
-criado_em: new Date().toISOString()
+hora: hora
 }]);
+
 
 if(error){
 console.log("Erro ao salvar:",error);
@@ -1290,21 +1290,6 @@ alert("Cartão salvo com sucesso");
 
 }
 
-async function salvarProgramacaoSupabase(ponto, hora){
-
-const { error } = await supabaseClient
-.from("programacao")
-.insert([{
-ponto: ponto,
-hora: hora,
-criado_em: new Date().toISOString()
-}]);
-
-if(error){
-console.log("Erro ao salvar programação:", error);
-}
-
-}
 
 async function carregarCartoesSupabase(){
 
