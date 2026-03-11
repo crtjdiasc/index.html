@@ -1047,36 +1047,33 @@ document.getElementById(`sel_loc_ponto_${vId}`).value = "";
 // SALVA UM REGISTRO NA PLANILHA GOOGLE
 
 // ADICIONA HORÁRIO NA ABA E SINCRONIZA
-function adicionarHorario() {
-    const inputPonto = document.getElementById('prog_ponto');
-    const inputHora = document.getElementById('prog_hora');
+async function adicionarHorario() {
 
-    const ponto = inputPonto.value.trim();
-    const hora = inputHora.value;
+const inputPonto = document.getElementById('prog_ponto');
+const inputHora = document.getElementById('prog_hora');
 
-    if(!ponto || !hora) { 
-        alert("⚠️ Preencha os campos!"); 
-        return; 
-    }
+const ponto = inputPonto.value.trim();
+const hora = inputHora.value;
 
-    const registro = { ponto, hora, obs: "" };
-
-    // 1️⃣ salva localmente
-    db.programacao.push(registro);
-    db.programacao.sort((a,b) => a.hora.localeCompare(b.hora));
-    salvarLocal();
-// sincronizarComPlanilha();
-    // 2️⃣ envia para a planilha (sincronização)
-    salvarProgramacaoNaPlanilha(registro);
-
-    // 3️⃣ renderiza na tabela
-    renderizarProgramacao();
-
-    // limpa inputs
-    inputPonto.value = "";
-    inputHora.value = "";
+if(!ponto || !hora){
+alert("⚠️ Preencha os campos!");
+return;
 }
 
+const registro = { ponto, hora, obs: "" };
+
+db.programacao.push(registro);
+db.programacao.sort((a,b)=>a.hora.localeCompare(b.hora));
+
+salvarLocal();
+
+await salvarProgramacaoSupabase(ponto, hora);
+
+renderizarProgramacao();
+
+inputPonto.value="";
+inputHora.value="";
+}
 // RENDERIZA OS HORÁRIOS CADASTRADOS
 function renderizarProgramacao() {
     const corpo = document.getElementById('corpoProgramacao');
@@ -1258,6 +1255,23 @@ return;
 alert("Cartão salvo com sucesso");
 
 }
+
+async function salvarProgramacaoSupabase(ponto, hora){
+
+const { error } = await supabaseClient
+.from("programacao")
+.insert([{
+ponto: ponto,
+hora: hora,
+criado_em: new Date().toISOString()
+}]);
+
+if(error){
+console.log("Erro ao salvar programação:", error);
+}
+
+}
+
 </script>
 
 
