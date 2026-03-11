@@ -810,19 +810,15 @@ detalhesFormatados
 ];
 
     db.finalizados.push(valores);
-    salvarLocal();
-    
-   delete rondaEmCurso[vId];
-localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+salvarLocal();
 
-await removerRondaEmAndamento(vId);
-    renderizarHistorico();
-    
-    // Tenta enviar para o Google Sheets
-    apiPost("CartoesFinalizados", valores);
+// Envia para Google Sheets
+apiPost("CartoesFinalizados", valores);
 
-    alert("Ronda Finalizada com Sucesso!");
-   limparFormulario(vId); // Recarrega para limpar os campos da tela
+// 🔹 Salva no Supabase
+await salvarCartaoFinalizadoSupabase(valores);
+
+alert("Ronda Finalizada com Sucesso!");
 }
 
     
@@ -1365,6 +1361,31 @@ else db.locais.push(c.nome);
 popularTodosSelects();
 
 }
+
+async function salvarCartaoFinalizadoSupabase(finalizado) {
+    const registro = {
+        data_hora: finalizado[0],
+        veiculo: finalizado[1],
+        cartao: finalizado[2],
+        operador: finalizado[3],
+        rondante: finalizado[4],
+        supervisor: finalizado[5],
+        score: finalizado[6],
+        detalhes: finalizado[7]
+    };
+
+    const { data, error } = await supabaseClient
+        .from("cartoes_finalizados")
+        .insert([registro]);
+
+    if (error) {
+        console.error("❌ Erro ao salvar cartão finalizado:", error);
+    } else {
+        console.log("✅ Cartão finalizado salvo no Supabase");
+    }
+}
+
+
 
 </script>
 
