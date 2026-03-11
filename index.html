@@ -390,7 +390,7 @@ sincronizarComPlanilha();
     placas: [],
     motivos: [],
     finalizados: [],
-    programacao: []
+    programacao: [...db.programacao]
 };
 
         // ==========================
@@ -503,8 +503,11 @@ db.finalizados = novoDB.finalizados;
 db.supervisores = novoDB.supervisores;
 db.placas = novoDB.placas;
 db.motivos = novoDB.motivos;
-db.programacao = novoDB.programacao;   // ⭐ ESTA LINHA FALTAVA
-renderizarProgramacao();     
+if(novoDB.programacao.length > 0){
+    db.programacao = novoDB.programacao;
+}
+
+renderizarProgramacao();    
 if (data.RondasEmAndamento) {
 
     rondaEmCurso = {};
@@ -537,6 +540,7 @@ if (data.RondasEmAndamento) {
 
 
 salvarLocal();
+localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
 // ATUALIZA A TELA
         const backupRonda = JSON.parse(JSON.stringify(rondaEmCurso));
 
@@ -979,12 +983,11 @@ await removerRondaEmAndamento(vId);
 
     async function apiPost(aba, valores) {
         try {
-            await fetch(API_URL, { 
-                method: "POST", 
-                mode: "no-cors", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ aba: aba, valores: valores }) 
-            });
+            await fetch(API_URL, {
+ method: "POST",
+ headers: { "Content-Type": "application/json" },
+ body: JSON.stringify({ aba: aba, valores: valores })
+});
             atualizarDash();
         } catch(e) { console.error("Erro ao enviar dados para o Google Sheets"); }
     }
@@ -1217,11 +1220,10 @@ const valores = [
 async function salvarNaPlanilha(aba, valores) {
     try {
         await fetch(API_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aba: aba, valores: valores })
-        });
+ method: "POST",
+ headers: { "Content-Type": "application/json" },
+ body: JSON.stringify({ aba: aba, valores: valores })
+});
         console.log(`✅ Dados enviados para aba ${aba}`);
     } catch(e) {
         console.error("Erro ao salvar na planilha:", e);
@@ -1405,13 +1407,14 @@ function sincronizarTudo(){
 
 sincronizarComPlanilha();
 restaurarEstadoRondas();
+popularTodosSelects();
+renderizarProgramacao();
 renderizarHistorico();
 atualizarDash();
 
-alert("✅ Sistema sincronizado com a planilha");
+alert("Sistema sincronizado");
 
 }
-
 function montarHistoricoPontos(respostas){
 
 let html="";
