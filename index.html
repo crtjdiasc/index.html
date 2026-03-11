@@ -536,7 +536,7 @@ else db.locais.push(nome);
         popularTodosSelects();
         alert(`${tipo} cadastrado!`);
         document.getElementById('cad_aux_nome').value = "";
-        aawait supabaseClient
+        await supabaseClient
 .from("cadastros")
 .insert([{
 tipo: tipo,
