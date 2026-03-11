@@ -12,15 +12,17 @@
 
     <title>SMART CARD CECOPSV2026/01 – SAMARCO</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>   
+
+ <style>
         :root {
             --samarco-blue: #004a80;
             --samarco-orange: #f29100;
@@ -364,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 restaurarBancoLocal();
 
+carregarRondasSupabase();
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
@@ -1239,7 +1242,8 @@ async function salvarNaPlanilha(aba, valores) {
     }
 }
 
-async function registrarAcao(vId, isOk)
+async function registrarAcao(vId, isOk){
+
     let r = rondaEmCurso[vId];
     if(!r || r.index >= 25) return;
     
@@ -1503,6 +1507,23 @@ async function salvarRondaSupabase(dados){
 
 }
 
+
+async function carregarRondasSupabase(){
+
+const { data, error } = await supabase
+.from("rondas")
+.select("*")
+.order("timestamp",{ascending:false})
+.limit(50);
+
+if(error){
+console.log("Erro ao buscar rondas",error);
+return;
+}
+
+console.log("Rondas do banco:",data);
+
+}
 </script>
 
 
