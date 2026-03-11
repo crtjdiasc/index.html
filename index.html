@@ -366,17 +366,16 @@ function confirmarSenha() {
 document.addEventListener('DOMContentLoaded', () => {
 
 restaurarBancoLocal();
+carregarCartoesSupabase();
+popularTodosSelects();
 
 carregarRondasSupabase();
-carregarCartoesSupabase();
 carregarProgramacaoSupabase();
 carregarCadastrosSupabase();
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
 renderizarAbasVeiculos();
-popularTodosSelects();
-
 renderizarProgramacao();
 renderizarHistorico();
 
@@ -1458,6 +1457,23 @@ async function iniciarSessaoRonda(vId) {
     salvarRondaEmAndamento(vId);
     atualizarInterfaceRonda(vId);
     document.getElementById(`btn_fin_${vId}`).disabled = true;
+}
+
+async function carregarCartoesSupabase() {
+    const { data, error } = await supabaseClient
+        .from("cartoes")
+        .select("*");
+    
+    if(error){
+        console.error("Erro ao carregar cartões:", error);
+        return;
+    }
+    
+    db.cartoes = data.map(c => ({
+        num: c.numero,
+        veiculo: c.veiculo,
+        pontos: JSON.parse(c.pontos)
+    }));
 }
 
 </script>
