@@ -1266,7 +1266,7 @@ const respostaAtual = {
 
 salvarRondaSupabase({
     timestamp: new Date().toISOString(),
-    viatura: r.num,
+    viatura: vId,
     cartao: r.num,
     ponto: respostaAtual.ponto,
     operador: r.op,
@@ -1274,14 +1274,13 @@ salvarRondaSupabase({
     supervisor: r.sup,
     placa: r.placa,
     observacao: r.obs,
-    local: respostaAtual.local || "",
-    inicio: respostaAtual.inicio || "",
-    final: respostaAtual.final || "",
-    status: respostaAtual.status || "",
-    motivo: respostaAtual.motivo || "",
-    desvio: respostaAtual.desvio || ""
+    local: respostaAtual.ponto,
+    inicio: respostaAtual.hIni,
+    final: respostaAtual.hFim,
+    status: respostaAtual.status,
+    motivo: respostaAtual.motivo,
+    desvio: respostaAtual.desvio
 });
-
 // avança somente até o ponto 25
 if (r.index < r.pontosOriginais.length - 1) {
     r.index++;
