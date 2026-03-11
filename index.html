@@ -273,7 +273,7 @@ LIMPEZA TOTAL REAL
     <div id="container-veiculos"></div>
 
 <div style="text-align:center;margin:15px;">
-<button onclick="sincronizarTudo()" 
+<button onclick="location.reload ()" 
 style="
 background:#004a80;
 color:white;
@@ -304,8 +304,7 @@ cursor:pointer;
 </main>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxpvyfuDMihL2g7w3nPEcp1pwbMNgpOMl9uYTxFzeL8RWUMqp3_bwZZNCFPeM7tke3dvg/exec";
-
+    
 const SUPABASE_URL = "https://uzrhxvecfamkthujialt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_sAFbGQn2k72FsBaxySLLcw_Jgcn27cY";
 
@@ -377,213 +376,18 @@ popularTodosSelects();
 renderizarProgramacao();
 renderizarHistorico();
 
-sincronizarComPlanilha();
+// sincronizarComPlanilha();
 restaurarEstadoRondas();
 
 setInterval(verificarAlarmes, 10000);
 
-setInterval(()=>{
+// setInterval(()=>{
 
-sincronizarComPlanilha();
+// sincronizarComPlanilha();
 
-},60000);
+// },60000);
 });
-  async function sincronizarComPlanilha() {
-    try {
-        const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
-        const data = await response.json();
-
-        // Limpa tudo antes de recriar
-       const novoDB = {
-    cartoes: [],
-    operadores: [],
-    rondantes: [],
-    locais: [],
-    supervisores: [],
-    placas: [],
-    motivos: [],
-    finalizados: [],
-    programacao: [...db.programacao]
-};
-
-        // ==========================
-        // LENDO ABA CADASTROS
-        // ==========================
-       if (data.Cadastros) {
-
-    data.Cadastros.forEach(linha => {
-
-        const tipo = linha[1];
-        const nome = linha[2];
-
-        if (!tipo || !nome) return;
-
-        if (tipo === "Operador") {
-            novoDB.operadores.push(nome);
-        }
-
-        else if (tipo === "Rondante") {
-            novoDB.rondantes.push(nome);
-        }
-
-        else if (tipo === "Supervisor") {
-            novoDB.supervisores.push(nome);
-        }
-
-        else if (tipo === "Placa") {
-            novoDB.placas.push(nome);
-        }
-
-        else if (tipo === "Motivo") {
-            novoDB.motivos.push(nome);
-        }
-
-        else if (tipo === "Desvio" || tipo === "Redirecionamento") {
-            novoDB.locais.push(nome);
-        }
-
-        // CARTÕES
-        else if (tipo.toUpperCase().includes("CART")) {
-
-            const numero = linha[2];
-            const veiculo = linha[3];
-            const pontosRaw = linha[4];
-
-            const pontos = pontosRaw
-                ? pontosRaw.split("|")
-                : [];
-
-            novoDB.cartoes.push({
-                num: numero,
-                veiculo: veiculo,
-                pontos: pontos
-            });
-
-        }
-
-    });
-
-}
-       // ==========================
-// FINALIZADOS LIMPOS E FILTRADOS
-// ==========================
-
-// ==========================
-// FINALIZADOS (PADRÃO ARRAY)
-// ==========================
-if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
-
-    // Remove duplicados pela Data/Hora
-    const mapaUnico = {};
-
-    data.CartoesFinalizados.forEach(reg => {
-        if(reg && reg[0]) {
-            mapaUnico[reg[0]] = reg;
-        }
-    });
-
-    novoDB.finalizados = Object.values(mapaUnico);
-
-} else {
-    novoDB.finalizados = [];
-}
-
-
-
-
-renderizarHistorico();
-atualizarDash();
-        
-// ==========================
-// PROGRAMACAO
-// ==========================
-if (data.Programacao && Array.isArray(data.Programacao)) {
-
-    novoDB.programacao = data.Programacao.map(l => ({
-        ponto: l[1] || "",
-        hora: l[2] || "",
-        obs: l[3] || ""
-    }));
-
-}
-
-
-db.cartoes = novoDB.cartoes;
-db.operadores = novoDB.operadores;
-db.rondantes = novoDB.rondantes;
-db.locais = novoDB.locais;
-db.finalizados = novoDB.finalizados;
-db.supervisores = novoDB.supervisores;
-db.placas = novoDB.placas;
-db.motivos = novoDB.motivos;
-if(novoDB.programacao.length > 0){
-    db.programacao = novoDB.programacao;
-}
-
-renderizarProgramacao();    
-if (data.RondasEmAndamento) {
-
-    rondaEmCurso = {};
-
-    data.RondasEmAndamento.forEach(l => {
-
-        const vId = l[1];
-
-        if (!vId) return;
-
-     rondaEmCurso[vId] = {
-    num: l[2],
-    index: parseInt(l[3] || 0),
-    op: l[4],
-    ron: l[5],
-    sup: l[6] || "",
-    placa: l[7] || "",
-    obs: l[8] || "",
-    motivo: l[11] || "",
-    desvio: l[12] || "",
-    respostas: JSON.parse(l[9] || "[]"),
-    pontosOriginais: JSON.parse(l[10] || "[]")
-};
-
-    });
-
-}
-
-
-
-
-salvarLocal();
-localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
-// ATUALIZA A TELA
-        const backupRonda = JSON.parse(JSON.stringify(rondaEmCurso));
-
-// popularTodosSelects();
-
-// restaura valores selecionados
-Object.keys(backupRonda).forEach(vId => {
-
-if(!rondaEmCurso[vId]) return;
-
-rondaEmCurso[vId].motivo = backupRonda[vId].motivo || "";
-rondaEmCurso[vId].desvio = backupRonda[vId].desvio || "";
-
-if(document.getElementById(`sel_motivo_${vId}`))
-document.getElementById(`sel_motivo_${vId}`).value = rondaEmCurso[vId].motivo;
-
-if(document.getElementById(`sel_loc_ponto_${vId}`))
-document.getElementById(`sel_loc_ponto_${vId}`).value = rondaEmCurso[vId].desvio;
-
-});renderizarHistorico();
-atualizarDash();
-restaurarEstadoRondas();
-
-        console.log("✅ Dados da planilha carregados no sistema");
-
-    } catch (erro) {
-        console.log("Erro ao sincronizar:", erro);
-    }
-}
-
+ 
 function limpezaForcadaTotal() {
 
     if (!confirmarSenha()) return;
@@ -595,7 +399,7 @@ function limpezaForcadaTotal() {
 localStorage.removeItem("ronda_em_curso");
     renderizarHistorico();
     atualizarDash();
-    sincronizarComPlanilha();
+    // sincronizarComPlanilha();
 
     alert("✅ Sistema reiniciado e sincronizado.");
 }
@@ -690,23 +494,23 @@ function limparRegistrosComErro() {
         if(pontosTemporarios.length === 25) div.style.borderColor = "var(--success)";
     }
 
-    async function enviarCartaoPlanilha() {
-        const cartao = {
-            num: document.getElementById('cad_cartao_num').value,
-            veiculo: document.getElementById('cad_cartao_veic').value,
-            pontos: [...pontosTemporarios]
-        };
-        db.cartoes.push(cartao);
+    async function salvarCartaoSupabase(cartao){
 
-        salvarLocal();
-        popularTodosSelects();
-        alert(`Cartão ${cartao.num} salvos!`);
-        pontosTemporarios = [];
-        document.getElementById('cad_cartao_num').value = "";
-        document.getElementById('listaPontosPreview').innerHTML = "Aguardando pontos (0/25)...";
-        document.getElementById('btnSalvarCartao').disabled = true;
-        apiPost("Cadastros", [new Date().toLocaleString(), "CARTÃO", cartao.num, cartao.veiculo, cartao.pontos.join('|')]);
-    }
+const { error } = await supabaseClient
+.from("cartoes")
+.insert([{
+numero: cartao.num,
+veiculo: cartao.veiculo,
+pontos: cartao.pontos
+}]);
+
+if(error){
+console.log("Erro ao salvar cartão",error);
+}else{
+console.log("Cartão salvo");
+}
+
+}
 
     async function enviarAuxiliar() {
         const nome = document.getElementById('cad_aux_nome').value;
@@ -994,39 +798,7 @@ await removerRondaEmAndamento(vId);
    limparFormulario(vId); // Recarrega para limpar os campos da tela
 }
 
-    async function apiPost(aba, valores) {
-        try {
-            await fetch(API_URL, {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({ aba: aba, valores: valores })
-});
-            atualizarDash();
-        } catch(e) { console.error("Erro ao enviar dados para o Google Sheets"); }
-    }
-
-   function renderizarHistorico() {
-    const corpo = document.getElementById('corpoFinalizados');
-    if(!corpo) return;
-
-   corpo.innerHTML = db.finalizados.map((r, index) => `
-<tr>
-<td>${r[0]}</td>
-<td>${r[1]}</td>
-<td>${r[2]}</td>
-<td>${r[4]}</td>
-<td>${r[5]}</td>
-<td style="font-weight:bold;color:${parseFloat(r[7])>=90?'var(--success)':'var(--danger)'}">
-${r[7]}
-</td>
-<td style="font-size:0.8rem;">${r[8]}</td>
-<td>
-<button onclick="gerarPDFIndividual(${index})">PDF</button>
-</td>
-</tr>
-`).join('');
-}
-
+    
     function limparHistorico() {
 
     if (!confirmarSenha()) return;
@@ -1161,7 +933,7 @@ async function excluirCartaoFinalizado(index) {
         renderizarHistorico();
         atualizarDash();
         alert("✅ Cartão excluído definitivamente da planilha!");
-        sincronizarComPlanilha();
+        // sincronizarComPlanilha();
 
     } catch (erro) {
         alert("❌ Erro ao excluir da planilha.");
@@ -1196,51 +968,6 @@ async function salvarProgramacao(ponto, hIni, hFim, obs) {
     ];
     await salvarNaPlanilha("Programacao", valores);
     console.log("✅ Programação sincronizada!");
-}
-async function salvarRondaEmAndamento(vId) {
-
-    const r = rondaEmCurso[vId];
-    if (!r) return;
-const valores = [
-    r.dataInicio,
-    vId,
-    r.num,
-    r.index,
-    r.op || "",
-    r.ron || "",
-    r.sup || "",
-    r.placa || "",
-    r.obs || "",
-    JSON.stringify(r.respostas),
-    JSON.stringify(r.pontosOriginais),
-    r.motivo || "",
-    r.desvio || ""
-];  try {
-        await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                acao: "salvarOuAtualizar",
-                valores: JSON.stringify(valores)
-            })
-        });
-
-    } catch (erro) {
-        console.error("Erro ao salvar ronda em andamento", erro);
-    }
-}
-
-async function salvarNaPlanilha(aba, valores) {
-    try {
-        await fetch(API_URL, {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({ aba: aba, valores: valores })
-});
-        console.log(`✅ Dados enviados para aba ${aba}`);
-    } catch(e) {
-        console.error("Erro ao salvar na planilha:", e);
-    }
 }
 
 async function registrarAcao(vId, isOk){
@@ -1316,38 +1043,8 @@ document.getElementById(`sel_loc_ponto_${vId}`).value = "";
     document.getElementById(`h_fim_${vId}`).value = "";
 
 }
-async function removerRondaEmAndamento(vId) {
-
-    const r = rondaEmCurso[vId];
-    if (!r) return;
-
-    try {
-        await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                acao: "remover",
-                cartao: r.num   // 🔥 agora envia o cartão correto
-            })
-        });
-
-    } catch (erro) {
-        console.error("Erro ao remover ronda em andamento", erro);
-    }
-}
-
 
 // SALVA UM REGISTRO NA PLANILHA GOOGLE
-async function salvarProgramacaoNaPlanilha(registro) {
-    const valores = [
-        new Date().toLocaleString(), // timestamp
-        registro.ponto,
-        registro.hora,
-        registro.obs || ""
-    ];
-    await apiPost("Programacao", valores);
-    console.log("✅ Programação sincronizada:", valores);
-}
 
 // ADICIONA HORÁRIO NA ABA E SINCRONIZA
 function adicionarHorario() {
@@ -1368,7 +1065,7 @@ function adicionarHorario() {
     db.programacao.push(registro);
     db.programacao.sort((a,b) => a.hora.localeCompare(b.hora));
     salvarLocal();
-sincronizarComPlanilha();
+// sincronizarComPlanilha();
     // 2️⃣ envia para a planilha (sincronização)
     salvarProgramacaoNaPlanilha(registro);
 
@@ -1423,7 +1120,7 @@ document.getElementById(`h_fim_${vId}`).value="";
 }
 function sincronizarTudo(){
 
-sincronizarComPlanilha();
+// sincronizarComPlanilha();
 restaurarEstadoRondas();
 popularTodosSelects();
 renderizarProgramacao();
@@ -1515,17 +1212,52 @@ const { data, error } = await supabaseClient
 .from("rondas")
 .select("*")
 .order("timestamp",{ascending:false})
-.limit(50);
+.limit(100);
 
 if(error){
 console.log("Erro ao buscar rondas",error);
 return;
 }
 
-console.log("Rondas do banco:",data);
+db.finalizados = data.map(r=>[
+new Date(r.timestamp).toLocaleString(),
+r.viatura,
+r.cartao,
+r.operador,
+r.rondante,
+r.status,
+`${r.local} | Início ${r.inicio} | Final ${r.final}`
+]);
+
+renderizarHistorico();
+atualizarDash();
 
 }
+async function enviarCartaoPlanilha(){
 
+const cartao = {
+num: document.getElementById("cad_cartao_num").value,
+veiculo: document.getElementById("cad_cartao_veic").value,
+pontos: pontosTemporarios
+};
+
+const { error } = await supabaseClient
+.from("cartoes")
+.insert([{
+numero: cartao.num,
+veiculo: cartao.veiculo,
+pontos: cartao.pontos
+}]);
+
+if(error){
+console.log("Erro ao salvar cartão:", error);
+alert("Erro ao salvar cartão");
+return;
+}
+
+alert("Cartão salvo com sucesso");
+
+}
 </script>
 
 
