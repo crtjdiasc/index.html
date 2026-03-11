@@ -728,48 +728,36 @@ if (r.index < 25) atualizarInterfaceRonda(vId);
 
 function atualizarInterfaceRonda(vId) {
     const ronda = rondaEmCurso[vId];
+
     if (!ronda || !ronda.pontosOriginais || ronda.pontosOriginais.length === 0) {
-        document.getElementById(`painelPonto_${vId}`).innerText = "---";
+        document.getElementById(`painelPonto_${vId}`).innerText = "AGUARDANDO SELEÇÃO";
+        document.getElementById(`contadorPonto_${vId}`).innerText = "0/0";
+        document.getElementById(`horaInicio_${vId}`).innerText = "--:--";
+        document.getElementById(`horaFinal_${vId}`).value = "";
+        document.getElementById(`motivo_${vId}`).value = "";
+        document.getElementById(`desvio_${vId}`).value = "";
+        document.getElementById(`obs_${vId}`).value = "";
+        document.getElementById(`sup_${vId}`).value = "";
+        document.getElementById(`btn_fin_${vId}`).disabled = true;
         return;
     }
 
     const pontoAtual = ronda.pontosOriginais[ronda.index] || "---";
 
-    // atualiza o painel
     document.getElementById(`painelPonto_${vId}`).innerText = pontoAtual;
-
-    // atualiza informações de tempo, motivo, desvio, etc.
+    document.getElementById(`contadorPonto_${vId}`).innerText = `${ronda.index + 1}/${ronda.pontosOriginais.length}`;
     document.getElementById(`horaInicio_${vId}`).innerText = ronda.dataInicio;
-    document.getElementById(`horaFinal_${vId}`).value = ""; // limpa a hora final
-    document.getElementById(`motivo_${vId}`).value = ronda.motivo || "Sem Motivo";
-    document.getElementById(`desvio_${vId}`).value = ronda.desvio || "Sem Desvio";
-}    
+    document.getElementById(`horaFinal_${vId}`).value = "";
+    document.getElementById(`motivo_${vId}`).value = ronda.motivo || "";
+    document.getElementById(`desvio_${vId}`).value = ronda.desvio || "";
+    document.getElementById(`obs_${vId}`).value = ronda.obs || "";
+    document.getElementById(`sup_${vId}`).value = ronda.sup || "";
 
-
-
-function atualizarInterfaceRonda(vId) {
-        let r = rondaEmCurso[vId];
-
-let pontoAnterior = r.index > 0 ? r.pontosOriginais[r.index - 1] : "---";
-
-document.getElementById(`ponto_anterior_${vId}`).innerText =
-`PONTO ANTERIOR: ${pontoAnterior}`;
-        document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
-        document.getElementById(`cont_ponto_${vId}`).innerText = `PONTO ${r.index + 1} / 25`;
-if(r.respostas && r.respostas.length > 0){
-
-let historico = montarHistoricoPontos(r.respostas);
-
-document.getElementById(`ponto_anterior_${vId}`).innerHTML =
-`<span style="color:red;font-weight:bold;">ÚLTIMO REGISTRO:</span><br>${historico}`;
-
+    // Botão FINALIZAR habilitado apenas no último ponto
+    document.getElementById(`btn_fin_${vId}`).disabled = (ronda.index + 1 < ronda.pontosOriginais.length);
 }
-        document.getElementById(`bar_${vId}`).style.width = (r.index / 25 * 100) + "%";
-        
-        // Captura o horário de início do ponto no momento que ele aparece
-        const agora = new Date();
-        document.getElementById(`h_ini_${vId}`).innerText = agora.toLocaleTimeString('pt-BR');
-    }
+
+
 
 
 async function salvarCartaoFinalizadoSupabase(finalizado) {
@@ -1410,7 +1398,67 @@ async function salvarCartaoFinalizadoSupabase(finalizado) {
     }
 }
 
+async function iniciarSessaoRonda(vId) {
+    const select = document.getElementById(`sel_cartao_${vId}`);
+    const num = select.value;
+    if (!num) return;
 
+    const veiculosMap = { V01: "VICTOR 01", V02: "VICTOR 02", V03: "VICTOR 03", A02: "ALFA 02" };
+    const nomeVeiculo = veiculosMap[vId];
+
+    // 🔹 Busca o cartão no Supabase
+    const { data: cartoes, error } = await supabase
+        .from('cartoes')
+        .select('*')
+        .eq('num', num)
+        .eq('veiculo', nomeVeiculo)
+        .limit(1);
+
+    if (error) {
+        console.error("Erro Supabase:", error);
+        alert("Erro ao buscar cartão no banco.");
+        return;
+    }
+
+    if (!cartoes || cartoes.length === 0) {
+        alert("⚠️ Cartão não encontrado para este veículo.");
+        return;
+    }
+
+    let cartao = cartoes[0];
+
+    // 🔹 Garante que pontos sejam array
+    if (typeof cartao.pontos === "string") {
+        try {
+            cartao.pontos = JSON.parse(cartao.pontos);
+        } catch (e) {
+            console.error("Erro ao converter pontos do Supabase:", e);
+            cartao.pontos = [];
+        }
+    }
+
+    // 🔹 Inicializa a ronda em andamento
+    rondaEmCurso[vId] = {
+        num: num,
+        dataInicio: new Date().toLocaleString(),
+        pontosOriginais: [...cartao.pontos],
+        index: 0,
+        respostas: [],
+        op: "",
+        ron: "",
+        obs: "",
+        sup: "",
+        placa: "",
+        motivo: "",
+        desvio: ""
+    };
+
+    // 🔹 Salva estado e atualiza painel
+    salvarEstadoTempoReal(vId);
+    salvarRondaEmAndamento(vId);
+    atualizarInterfaceRonda(vId);
+    document.getElementById(`btn_fin_${vId}`).disabled = true;
+}
 
 </script>
 
