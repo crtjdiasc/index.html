@@ -725,43 +725,29 @@ if (r.index < 25) atualizarInterfaceRonda(vId);
 
 }
 // ──────────────── INICIAR SESSÃO DE RONDA ────────────────
-function iniciarSessaoRonda(vId) {
-    const num = document.getElementById(`sel_cartao_${vId}`).value;
-    if (!num) return;
 
-    const veiculosMap = { V01: "VICTOR 01", V02: "VICTOR 02", V03: "VICTOR 03", A02: "ALFA 02" };
-    const nomeVeiculo = veiculosMap[vId];
-
-    let cartao = db.cartoes.find(c => c.num === num && c.veiculo === nomeVeiculo);
-    if (!cartao) {
-        alert("⚠️ Cartão não encontrado para este veículo.");
+function atualizarInterfaceRonda(vId) {
+    const ronda = rondaEmCurso[vId];
+    if (!ronda || !ronda.pontosOriginais || ronda.pontosOriginais.length === 0) {
+        document.getElementById(`painelPonto_${vId}`).innerText = "---";
         return;
     }
 
-    // 🔹 garante que pontos sejam array
-    if (typeof cartao.pontos === "string") cartao.pontos = JSON.parse(cartao.pontos);
+    const pontoAtual = ronda.pontosOriginais[ronda.index] || "---";
 
-    rondaEmCurso[vId] = {
-        num: num,
-        dataInicio: new Date().toLocaleString(),
-        pontosOriginais: [...cartao.pontos], // 🔹 copia os pontos para a ronda
-        index: 0,
-        respostas: [],
-        op: "",
-        ron: "",
-        obs: "",
-        sup: "",
-        placa: "",
-        motivo: "",
-        desvio: ""
-    };
+    // atualiza o painel
+    document.getElementById(`painelPonto_${vId}`).innerText = pontoAtual;
 
-    salvarEstadoTempoReal(vId);
-    salvarRondaEmAndamento(vId);
-    atualizarInterfaceRonda(vId);
-    document.getElementById(`btn_fin_${vId}`).disabled = true;
+    // atualiza informações de tempo, motivo, desvio, etc.
+    document.getElementById(`horaInicio_${vId}`).innerText = ronda.dataInicio;
+    document.getElementById(`horaFinal_${vId}`).value = ""; // limpa a hora final
+    document.getElementById(`motivo_${vId}`).value = ronda.motivo || "Sem Motivo";
+    document.getElementById(`desvio_${vId}`).value = ronda.desvio || "Sem Desvio";
 }    
-    function atualizarInterfaceRonda(vId) {
+
+
+
+function atualizarInterfaceRonda(vId) {
         let r = rondaEmCurso[vId];
 
 let pontoAnterior = r.index > 0 ? r.pontosOriginais[r.index - 1] : "---";
