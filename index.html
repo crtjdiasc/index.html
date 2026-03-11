@@ -308,12 +308,13 @@ cursor:pointer;
 const SUPABASE_URL = "https://uzrhxvecfamkthujialt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_sAFbGQn2k72FsBaxySLLcw_Jgcn27cY";
 
-const { createClient } = supabase;
+const { createClient } = window.supabase;
 
 const supabaseClient = createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
+SUPABASE_URL,
+SUPABASE_KEY
 );
+
 
     let db = {
     cartoes: [],
