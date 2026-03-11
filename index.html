@@ -426,9 +426,27 @@ function limparRegistrosComErro() {
 }
     
    
-    function removerProgramacao(index) {
-        if(confirm("Deseja remover este alarme?")) { db.programacao.splice(index, 1); salvarLocal(); renderizarProgramacao(); }
-    }
+    async function removerProgramacao(index){
+
+const item = db.programacao[index];
+
+if(!confirm("Deseja remover este alarme?")) return;
+
+const { error } = await supabaseClient
+.from("programacao")
+.delete()
+.eq("hora", item.hora)
+.eq("ponto", item.ponto);
+
+if(error){
+console.log(error);
+alert("Erro ao remover");
+return;
+}
+
+await carregarProgramacaoSupabase();
+
+}
 
     function verificarAlarmes() {
         const agora = new Date();
@@ -1056,7 +1074,7 @@ document.getElementById(`sel_loc_ponto_${vId}`).value = "";
 // SALVA UM REGISTRO NA PLANILHA GOOGLE
 
 // ADICIONA HORÁRIO NA ABA E SINCRONIZA
-async function adicionarHorario() {
+async function adicionarHorario(){
 
 const inputPonto = document.getElementById('prog_ponto');
 const inputHora = document.getElementById('prog_hora');
@@ -1069,21 +1087,28 @@ alert("⚠️ Preencha os campos!");
 return;
 }
 
-const registro = { ponto, hora, obs: "" };
+const { error } = await supabaseClient
+.from("programacao")
+.insert([{
+ponto: ponto,
+hora: hora,
+criado_em: new Date().toISOString()
+}]);
 
-db.programacao.push(registro);
-db.programacao.sort((a,b)=>a.hora.localeCompare(b.hora));
+if(error){
+console.log("Erro ao salvar:",error);
+alert("Erro ao salvar programação");
+return;
+}
 
-salvarLocal();
-
-await salvarProgramacaoSupabase(ponto, hora);
-
-renderizarProgramacao();
+await carregarProgramacaoSupabase();
 
 inputPonto.value="";
 inputHora.value="";
-}
-// RENDERIZA OS HORÁRIOS CADASTRADOS
+
+alert("Programação salva");
+
+}// RENDERIZA OS HORÁRIOS CADASTRADOS
 function renderizarProgramacao() {
     const corpo = document.getElementById('corpoProgramacao');
     if(!corpo) return;
