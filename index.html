@@ -382,8 +382,7 @@ setInterval(()=>{
 
 sincronizarComPlanilha();
 
-},15000);
-
+},60000);
 });
   async function sincronizarComPlanilha() {
     try {
@@ -1240,7 +1239,7 @@ async function salvarNaPlanilha(aba, valores) {
     }
 }
 
-function registrarAcao(vId, isOk) {
+async function registrarAcao(vId, isOk)
     let r = rondaEmCurso[vId];
     if(!r || r.index >= 25) return;
     
@@ -1264,7 +1263,7 @@ const respostaAtual = {
 
    r.respostas.push(respostaAtual);
 
-salvarRondaSupabase({
+await salvarRondaSupabase({
     timestamp: new Date().toISOString(),
     viatura: vId,
     cartao: r.num,
@@ -1297,20 +1296,7 @@ if (r.index < r.pontosOriginais.length - 1) {
     salvarEstadoTempoReal(vId);
 
     // 🔹 Enviar ponto atual para planilha
-   salvarNaPlanilha("RondasEmAndamento", [
-    new Date().toLocaleString(),
-    vId,
-    r.num,
-    r.index,
-    r.op,
-    r.ron,
-    r.sup,
-    r.placa,
-    r.obs,
-    JSON.stringify(r.respostas),
-    JSON.stringify(r.pontosOriginais)
-]);
-
+  
     if(r.index < 25) {
         atualizarInterfaceRonda(vId);
     } else {
