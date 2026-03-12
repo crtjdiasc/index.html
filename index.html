@@ -362,10 +362,10 @@ try{
 
 restaurarBancoLocal();
 
-carregarCartoesSupabase();
-carregarCadastrosSupabase();
-carregarProgramacaoSupabase();
-carregarRondasSupabase();
+await carregarCartoesSupabase();
+await carregarCadastrosSupabase();
+await carregarProgramacaoSupabase();
+await carregarRondasSupabase();
 popularTodosSelects();
 
 renderizarAbasVeiculos();
@@ -696,6 +696,21 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
 
    function popularTodosSelects(){
 
+/* proteção contra db vazio */
+
+if(!window.db){
+console.warn("db ainda não carregado");
+return;
+}
+
+db.cartoes = db.cartoes || [];
+db.operadores = db.operadores || [];
+db.rondantes = db.rondantes || [];
+db.supervisores = db.supervisores || [];
+db.placas = db.placas || [];
+db.motivos = db.motivos || [];
+db.locais = db.locais || [];
+
 ["V01","V02","V03","A02"].forEach(v=>{
 
 /* CARTÕES */
@@ -723,55 +738,73 @@ cartoesVeiculo.map(c=>`<option value="${c.num}">${c.num}</option>`).join('');
 /* OPERADOR */
 
 const op = document.getElementById(`sel_op_${v}`);
+
 if(op){
+
 op.innerHTML =
 '<option value="">Operador</option>' +
 db.operadores.map(o=>`<option>${o}</option>`).join('');
+
 }
 
 /* RONDANTE */
 
 const ron = document.getElementById(`sel_ron_${v}`);
+
 if(ron){
+
 ron.innerHTML =
 '<option value="">Rondante</option>' +
 db.rondantes.map(o=>`<option>${o}</option>`).join('');
+
 }
 
 /* SUPERVISOR */
 
 const sup = document.getElementById(`sel_sup_${v}`);
+
 if(sup){
+
 sup.innerHTML =
 '<option value="">Supervisor</option>' +
 db.supervisores.map(o=>`<option>${o}</option>`).join('');
+
 }
 
 /* PLACA */
 
 const placa = document.getElementById(`sel_placa_${v}`);
+
 if(placa){
+
 placa.innerHTML =
 '<option value="">Placa</option>' +
 db.placas.map(o=>`<option>${o}</option>`).join('');
+
 }
 
 /* MOTIVO */
 
 const motivo = document.getElementById(`sel_motivo_${v}`);
+
 if(motivo){
+
 motivo.innerHTML =
 '<option value="">Motivo</option>' +
 db.motivos.map(o=>`<option>${o}</option>`).join('');
+
 }
 
 /* LOCAL */
 
 const local = document.getElementById(`sel_loc_ponto_${v}`);
+
 if(local){
+
 local.innerHTML =
 '<option value="">Local</option>' +
 db.locais.map(o=>`<option>${o}</option>`).join('');
+
 }
 
 });
