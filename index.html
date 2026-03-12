@@ -315,57 +315,16 @@ SUPABASE_URL,
 SUPABASE_KEY
 );
 
-const db = {
+let db = {
 cartoes: [],
 programacao: [],
 cadastros: [],
 finalizados: []
 };
 
-let rondaEmCurso = {};
 
-document.addEventListener('DOMContentLoaded',()=>{
+let rondaEmCurso = JSON.parse(localStorage.getItem('ronda_em_curso')) || {};
 
-restaurarBancoLocal();
-carregarCartoesSupabase();
-carregarRondasSupabase();
-
-});function restaurarBancoLocal() {
-    const bancoSalvo = localStorage.getItem("smartcard_db");
-
-    if (bancoSalvo) {
-        db = JSON.parse(bancoSalvo);
-        console.log("✅ Banco restaurado do navegador");
-    }
-}
-    let pontosTemporarios = [];
-    let rondaEmCurso = JSON.parse(localStorage.getItem('ronda_em_curso')) || {};
-    let ultimoAlarmeConfirmado = "";
-    let chartInstance = null;
-
-
-// 🔐 SENHA DOS BOTÕES DE LIMPEZA
-const SENHA_LIMPEZA = "123456"; // troque pela sua senha
-
-function confirmarSenha() {
-    const senhaDigitada = prompt("🔐 Digite a senha para confirmar:");
-
-    if (!senhaDigitada) return false;
-
-    if (senhaDigitada === SENHA_LIMPEZA) {
-        return true;
-    } else {
-        alert("❌ Senha incorreta!");
-        return false;
-    }
-}
-
-    function atualizarRelogio() {
-        const elRelogio = document.getElementById('relogio');
-        if (!elRelogio) return;
-        const agora = new Date();
-        elRelogio.innerText = agora.toLocaleString('pt-BR');
-    }
 document.addEventListener('DOMContentLoaded',()=>{
 
 restaurarBancoLocal();
@@ -388,8 +347,6 @@ setInterval(atualizarRelogio,1000);
 
 setInterval(verificarAlarmes,1000);
 
-/* realtime */
-
 supabaseClient
 .channel('rondas-realtime')
 .on(
@@ -408,6 +365,14 @@ restaurarEstadoRondas();
 .subscribe();
 
 });
+
+
+    function atualizarRelogio() {
+        const elRelogio = document.getElementById('relogio');
+        if (!elRelogio) return;
+        const agora = new Date();
+        elRelogio.innerText = agora.toLocaleString('pt-BR');
+    }
 function limpezaForcadaTotal() {
 
     if (!confirmarSenha()) return;
@@ -1435,32 +1400,36 @@ restaurarEstadoRondas();
 
 function renderizarHistorico(){
 
-const tbody = document.querySelector("#tabela-historico tbody");
+const tbody = document.getElementById("corpoFinalizados");
 
 if(!tbody) return;
 
-tbody.innerHTML = "";
+tbody.innerHTML="";
 
-db.finalizados.forEach(l => {
+db.finalizados.forEach((l,i)=>{
 
-const tr = document.createElement("tr");
+const tr=document.createElement("tr");
 
-l.forEach(c => {
-
-const td = document.createElement("td");
-
-td.textContent = c;
-
+l.forEach(c=>{
+const td=document.createElement("td");
+td.textContent=c;
 tr.appendChild(td);
-
 });
+
+const tdAcoes=document.createElement("td");
+
+tdAcoes.innerHTML=`
+<button onclick="gerarPDFIndividual(${i})">PDF</button>
+<button onclick="excluirCartaoFinalizado(${i})">Excluir</button>
+`;
+
+tr.appendChild(tdAcoes);
 
 tbody.appendChild(tr);
 
 });
 
 }
-
 
 async function salvarRondaEmAndamento(vId){
 
