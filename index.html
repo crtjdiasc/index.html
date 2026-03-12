@@ -644,44 +644,39 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
             </section>`).join('');
     }
 
-    function popularTodosSelects() {
-        const veicIds = ['V01', 'V02', 'V03', 'A02'];
-        const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
-        ordenarListas();
-        veicIds.forEach((id, idx) => {
-            const sCartao = document.getElementById(`sel_cartao_${id}`);
-            const sOp = document.getElementById(`sel_op_${id}`);
-            const sRon = document.getElementById(`sel_ron_${id}`);
-            const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
-            if(!sCartao) return;
-const sMotivo = document.getElementById(`sel_motivo_${id}`);
+    function popularTodosSelects(){
 
-if(sMotivo){
-const sSup = document.getElementById(`sel_sup_${id}`);
-const sPlaca = document.getElementById(`sel_placa_${id}`);
+document.querySelectorAll('.sel-op').forEach(sel=>{
+sel.innerHTML = '<option value="">Operador</option>' +
+db.operadores.map(o=>`<option>${o}</option>`).join('');
+});
 
-if(sSup){
-sSup.innerHTML =
-'<option value="">---</option>' +
-db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
+document.querySelectorAll('.sel-ron').forEach(sel=>{
+sel.innerHTML = '<option value="">Rondante</option>' +
+db.rondantes.map(o=>`<option>${o}</option>`).join('');
+});
+
+document.querySelectorAll('.sel-sup').forEach(sel=>{
+sel.innerHTML = '<option value="">Supervisor</option>' +
+db.supervisores.map(o=>`<option>${o}</option>`).join('');
+});
+
+document.querySelectorAll('.sel-placa').forEach(sel=>{
+sel.innerHTML = '<option value="">Placa</option>' +
+db.placas.map(o=>`<option>${o}</option>`).join('');
+});
+
+document.querySelectorAll('.sel-motivo').forEach(sel=>{
+sel.innerHTML = '<option value="">Motivo</option>' +
+db.motivos.map(o=>`<option>${o}</option>`).join('');
+});
+
+document.querySelectorAll('.sel-local').forEach(sel=>{
+sel.innerHTML = '<option value="">Local</option>' +
+db.locais.map(o=>`<option>${o}</option>`).join('');
+});
+
 }
-
-if(sPlaca){
-sPlaca.innerHTML =
-'<option value="">---</option>' +
-db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
-}
-
-sMotivo.innerHTML =
-'<option value="">Sem Motivo</option>' +
-db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
-}
-            sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' + db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => `<option value="${c.num}">${c.num}</option>`).join('');
-            sOp.innerHTML = '<option value="">---</option>' + db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
-            sRon.innerHTML = '<option value="">---</option>' + db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
-            sLocPonto.innerHTML = '<option value="">Sem Desvio</option>' + db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
-        });
-    }
 
     function salvarEstadoTempoReal(){
 
@@ -1285,37 +1280,27 @@ renderizarProgramacao();
 
 async function carregarCadastrosSupabase(){
 
-const { data, error } = await supabaseClient
+const {data,error} = await supabaseClient
 .from("cadastros")
 .select("*");
 
 if(error){
-console.log("Erro cadastros:", error);
+
+console.log("Erro ao carregar cadastros",error);
 return;
+
 }
 
-db.operadores = [];
-db.rondantes = [];
-db.supervisores = [];
-db.placas = [];
-db.locais = [];
-db.motivos = [];
-
-data.forEach(c=>{
-
-if(c.tipo==="Operador") db.operadores.push(c.nome);
-else if(c.tipo==="Rondante") db.rondantes.push(c.nome);
-else if(c.tipo==="Supervisor") db.supervisores.push(c.nome);
-else if(c.tipo==="Placa") db.placas.push(c.nome);
-else if(c.tipo==="Motivo") db.motivos.push(c.nome);
-else db.locais.push(c.nome);
-
-});
+db.operadores = data.filter(c=>c.tipo==="operador").map(c=>c.nome);
+db.rondantes = data.filter(c=>c.tipo==="rondante").map(c=>c.nome);
+db.supervisores = data.filter(c=>c.tipo==="supervisor").map(c=>c.nome);
+db.placas = data.filter(c=>c.tipo==="placa").map(c=>c.nome);
+db.locais = data.filter(c=>c.tipo==="local").map(c=>c.nome);
+db.motivos = data.filter(c=>c.tipo==="motivo").map(c=>c.nome);
 
 popularTodosSelects();
 
 }
-
 async function salvarCartaoFinalizadoSupabase(finalizado) {
     const registro = {
         data_hora: finalizado[0],
