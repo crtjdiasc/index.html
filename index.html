@@ -315,19 +315,22 @@ SUPABASE_URL,
 SUPABASE_KEY
 );
 
-
-    let db = {
-    cartoes: [],
-    operadores: [],
-    rondantes: [],
-    supervisores: [],
-    placas: [],
-    locais: [],
-    motivos: [],
-    finalizados: [],
-    programacao: []
+const db = {
+cartoes: [],
+programacao: [],
+cadastros: [],
+finalizados: []
 };
-function restaurarBancoLocal() {
+
+let rondaEmCurso = {};
+
+document.addEventListener('DOMContentLoaded',()=>{
+
+restaurarBancoLocal();
+carregarCartoesSupabase();
+carregarRondasSupabase();
+
+});function restaurarBancoLocal() {
     const bancoSalvo = localStorage.getItem("smartcard_db");
 
     if (bancoSalvo) {
@@ -707,20 +710,20 @@ db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
         });
     }
 
-    function salvarEstadoTempoReal(vId) {
-        if (!rondaEmCurso[vId]) return;
-        rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
-        rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
-        rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
-rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
-rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
-rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
-rondaEmCurso[vId].desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
-        localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
-salvarLocal();
-salvarRondaEmAndamento(vId);
-    }
+    function salvarEstadoTempoReal(){
 
+localStorage.setItem(
+'ronda_em_curso',
+JSON.stringify(rondaEmCurso)
+);
+
+Object.keys(rondaEmCurso).forEach(vId => {
+
+salvarRondaEmAndamento(vId);
+
+});
+
+}
    function restaurarEstadoRondas(){
 
 Object.keys(rondaEmCurso).forEach(vId=>{
@@ -1407,7 +1410,7 @@ return;
 db.cartoes = data.map(c => ({
 num: c.numero,
 veiculo: c.veiculo,
-pontos: JSON.parse(c.pontos)
+pontos: typeof c.pontos === "string" ? JSON.parse(c.pontos) : c.pontos
 }));
 
 popularTodosSelects();
@@ -1427,6 +1430,64 @@ rondaEmCurso[r.viatura] = JSON.parse(r.dados);
 });
 
 restaurarEstadoRondas();
+
+}
+
+function renderizarHistorico(){
+
+const tbody = document.querySelector("#tabela-historico tbody");
+
+if(!tbody) return;
+
+tbody.innerHTML = "";
+
+db.finalizados.forEach(l => {
+
+const tr = document.createElement("tr");
+
+l.forEach(c => {
+
+const td = document.createElement("td");
+
+td.textContent = c;
+
+tr.appendChild(td);
+
+});
+
+tbody.appendChild(tr);
+
+});
+
+}
+
+
+async function salvarRondaEmAndamento(vId){
+
+const r = rondaEmCurso[vId];
+
+if(!r) return;
+
+try{
+
+await supabaseClient
+.from("rondas")
+.insert([{
+viatura: vId,
+cartao: r.num,
+operador: r.op,
+rondante: r.ron,
+supervisor: r.sup,
+placa: r.placa,
+observacao: r.obs,
+status: "em andamento"
+}]);
+
+}catch(e){
+
+console.log("Erro ao salvar ronda em andamento",e);
+
+}
 
 }
 
