@@ -363,43 +363,16 @@ function confirmarSenha() {
         const agora = new Date();
         elRelogio.innerText = agora.toLocaleString('pt-BR');
     }
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded',()=>{
 
 restaurarBancoLocal();
+
 carregarCartoesSupabase();
-popularTodosSelects();
-
 carregarRondasSupabase();
-
-/* 🔴 SINCRONIZAÇÃO EM TEMPO REAL ENTRE COMPUTADORES */
-
-supabaseClient
-.channel('rondas-realtime')
-.on(
-'postgres_changes',
-{
-event: '*',
-schema: 'public',
-table: 'rondas'
-},
-payload => {
-
-console.log("Atualização recebida:", payload);
-
-carregarRondasSupabase(); 
-restaurarEstadoRondas();
-
-}
-)
-.subscribe();
-
-/* 🔴 FIM DA SINCRONIZAÇÃO */
-
 carregarProgramacaoSupabase();
 carregarCadastrosSupabase();
 
-atualizarRelogio();
-setInterval(atualizarRelogio, 1000);
+popularTodosSelects();
 
 renderizarAbasVeiculos();
 renderizarProgramacao();
@@ -407,9 +380,31 @@ renderizarHistorico();
 
 restaurarEstadoRondas();
 
-setInterval(verificarAlarmes, 10000);
+atualizarRelogio();
+setInterval(atualizarRelogio,1000);
 
-}); 
+setInterval(verificarAlarmes,1000);
+
+/* realtime */
+
+supabaseClient
+.channel('rondas-realtime')
+.on(
+'postgres_changes',
+{
+event:'*',
+schema:'public',
+table:'rondas'
+},
+payload=>{
+
+carregarRondasSupabase();
+restaurarEstadoRondas();
+
+})
+.subscribe();
+
+});
 function limpezaForcadaTotal() {
 
     if (!confirmarSenha()) return;
@@ -465,17 +460,17 @@ return;
 await carregarProgramacaoSupabase();
 
 }
-
-    function verificarAlarmes(){
+function verificarAlarmes(){
 
 const agora = new Date();
+
 const horaAtual =
 agora.getHours().toString().padStart(2,'0') + ":" +
 agora.getMinutes().toString().padStart(2,'0');
 
 db.programacao.forEach(p => {
 
-if(p.hora === horaAtual && ultimoAlarmeConfirmado !== p.hora){
+if(p.hora === horaAtual && ultimoAlarmeConfirmado !== horaAtual){
 
 dispararAlerta(p.ponto,p.hora);
 
@@ -484,7 +479,6 @@ dispararAlerta(p.ponto,p.hora);
 });
 
 }
-
     function dispararAlerta(ponto, hora) {
         document.getElementById('txtAlarmePonto').innerText = `PONTO: ${ponto}`;
         document.getElementById('modalAlarme').style.display = "flex";
@@ -727,29 +721,21 @@ salvarLocal();
 salvarRondaEmAndamento(vId);
     }
 
-   function restaurarEstadoRondas() {
+   function restaurarEstadoRondas(){
 
-['V01','V02','V03','A02'].forEach(vId => {
+Object.keys(rondaEmCurso).forEach(vId=>{
 
 const r = rondaEmCurso[vId];
 
-if (r) {
+if(!r) return;
 
-document.getElementById(`sel_cartao_${vId}`).value = r.num;
-document.getElementById(`sel_op_${vId}`).value = r.op || "";
-document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
-document.getElementById(`sel_sup_${vId}`).value = r.sup || "";
-document.getElementById(`sel_placa_${vId}`).value = r.placa || "";
-document.getElementById(`obs_${vId}`).value = r.obs || "";
+const aba = document.getElementById("aba-"+vId);
 
-/* 🔴 ADICIONE ISTO */
+if(!aba) return;
 
-document.getElementById(`sel_motivo_${vId}`).value = r.motivo || "";
-document.getElementById(`sel_loc_ponto_${vId}`).value = r.desvio || "";
+const btn = aba.querySelector(".btn-iniciar");
 
-if (r.index < 25) atualizarInterfaceRonda(vId);
-
-}
+if(btn) btn.textContent="Continuar Ronda";
 
 });
 
@@ -1204,35 +1190,52 @@ status
 
 } 
 
-async function salvarRondaSupabase(dados){
+async function salvarRondaSupabase(r){
 
-    const { data, error } =await supabaseClient
+try{
+
+await supabaseClient
 .from("rondas")
-.insert([dados]);
+.insert([{
+viatura: r.viatura,
+cartao: r.cartao,
+ponto: r.ponto,
+operador: r.operador,
+rondante: r.rondante,
+supervisor: r.supervisor,
+placa: r.placa,
+observacao: r.observacao,
+status: r.status,
+motivo: r.motivo,
+desvio: r.desvio,
+local: r.local,
+inicio: r.inicio,
+final: r.final
+}]);
 
-    if(error){
-        console.log("❌ Erro ao salvar:", error);
-    }else{
-        console.log("✅ Ronda salva no banco");
-    }
+}catch(e){
+
+console.log("Erro ao salvar ronda",e);
 
 }
 
+}
 
 async function carregarRondasSupabase(){
 
 const { data, error } = await supabaseClient
 .from("rondas")
 .select("*")
-.order("timestamp",{ascending:false})
-.limit(100);
+.order("timestamp",{ascending:false});
 
 if(error){
-console.log("Erro ao buscar rondas",error);
+console.log("Erro ao carregar rondas:",error);
 return;
 }
 
-db.finalizados = data.map(r=>[
+if(!data) return;
+
+db.finalizados = data.map(r => [
 new Date(r.timestamp).toLocaleString(),
 r.viatura,
 r.cartao,
@@ -1243,7 +1246,6 @@ r.status,
 ]);
 
 renderizarHistorico();
-atualizarDash();
 
 }
 // ──────────────── ENVIAR CARTÃO PARA SUPABASE ────────────────
@@ -1410,28 +1412,7 @@ pontos: JSON.parse(c.pontos)
 
 popularTodosSelects();
 
-}async function salvarRondaEmAndamento(vId){
-
-const r = rondaEmCurso[vId];
-
-if(!r) return;
-
-await supabaseClient
-.from("rondas_ativas")
-.upsert([{
-viatura: vId,
-cartao: r.num,
-operador: r.op,
-rondante: r.ron,
-supervisor: r.sup,
-placa: r.placa,
-observacao: r.obs,
-indice: r.index,
-dados: JSON.stringify(r)
-}]);
-
 }
-
 
 async function carregarRondasAtivas(){
 
