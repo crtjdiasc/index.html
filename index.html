@@ -337,11 +337,10 @@ let ultimoAlarmeConfirmado = "";document.addEventListener('DOMContentLoaded',()=
 
 restaurarBancoLocal();
 
-carregarCartoesSupabase();
-carregarRondasSupabase();
-carregarProgramacaoSupabase();
-carregarCadastrosSupabase();
-
+await carregarCartoesSupabase();
+await carregarCadastrosSupabase();
+await carregarProgramacaoSupabase();
+await carregarRondasSupabase();
 popularTodosSelects();
 
 renderizarAbasVeiculos();
@@ -702,7 +701,9 @@ v === "V02" ? "VICTOR 02" :
 v === "V03" ? "VICTOR 03" :
 "ALFA 02";
 
-const cartoesVeiculo = db.cartoes.filter(c => c.veiculo === veiculoNome);
+const cartoesVeiculo = db.cartoes
+.filter(c => c.veiculo === veiculoNome)
+.sort((a,b)=> Number(a.num) - Number(b.num));
 
 cartao.innerHTML =
 '<option value="">Selecione o cartão</option>' +
@@ -1446,24 +1447,24 @@ async function carregarCartoesSupabase(){
 
 const { data, error } = await supabaseClient
 .from("cartoes")
-.select("*")
-.order("numero",{ascending:true});
+.select("*");
 
 if(error){
 console.log("Erro ao carregar cartões:", error);
 return;
 }
 
-db.cartoes = data.map(c => ({
+db.cartoes = data
+.map(c => ({
 num: c.numero,
 veiculo: c.veiculo,
 pontos: typeof c.pontos === "string" ? JSON.parse(c.pontos) : c.pontos
-}));
+}))
+.sort((a,b)=> Number(a.num) - Number(b.num));
 
 popularTodosSelects();
 
 }
-
 async function carregarRondasAtivas(){
 
 const { data } = await supabaseClient
