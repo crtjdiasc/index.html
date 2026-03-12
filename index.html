@@ -310,49 +310,12 @@ const SUPABASE_KEY = "sb_publishable_sAFbGQn2k72FsBaxySLLcw_Jgcn27cY";
 
 const { createClient } = window.supabase;
 
-const supabaseClient = createClient(
+const supabaseClient = supabase.createClient(
 SUPABASE_URL,
 SUPABASE_KEY
 );
 
-let db = {
-cartoes: [],
-programacao: [],
-cadastros: [],
-finalizados: [],
-
-operadores: [],
-rondantes: [],
-supervisores: [],
-placas: [],
-locais: [],
-motivos: []
-};
-
-let rondaEmCurso = JSON.parse(localStorage.getItem('ronda_em_curso')) || {};
-
-let pontosTemporarios = [];
-
-let ultimoAlarmeConfirmado = "";document.addEventListener('DOMContentLoaded',()=>{
-
-restaurarBancoLocal();
-
-await carregarCartoesSupabase();
-await carregarCadastrosSupabase();
-await carregarProgramacaoSupabase();
-await carregarRondasSupabase();
-popularTodosSelects();
-
-renderizarAbasVeiculos();
-renderizarProgramacao();
-renderizarHistorico();
-
-restaurarEstadoRondas();
-
-atualizarRelogio();
-setInterval(atualizarRelogio,1000);
-
-setInterval(verificarAlarmes,1000);
+/* REALTIME RONDAS */
 
 supabaseClient
 .channel('rondas-realtime')
@@ -365,15 +328,47 @@ table:'rondas'
 },
 payload=>{
 
+console.log("Realtime:",payload);
+
 carregarRondasSupabase();
+
+}
+)
+.subscribe();
+let rondaEmCurso = JSON.parse(localStorage.getItem('ronda_em_curso')) || {};
+
+let pontosTemporarios = [];
+
+let ultimoAlarmeConfirmado = "";
+
+document.addEventListener('DOMContentLoaded', ()=>{
+
+try{
+
+restaurarBancoLocal();
+
+carregarCartoesSupabase();
+carregarCadastrosSupabase();
+carregarProgramacaoSupabase();
+carregarRondasSupabase();
+
+popularTodosSelects();
+
+renderizarAbasVeiculos();
+renderizarProgramacao();
+renderizarHistorico();
+
 restaurarEstadoRondas();
 
-})
-.subscribe();
+}catch(e){
 
-});
+console.error("Erro na inicialização:",e);
 
-function restaurarBancoLocal(){
+}
+
+
+
+});function restaurarBancoLocal(){
 
 const banco = localStorage.getItem("smartcard_db");
 
