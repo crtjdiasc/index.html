@@ -301,8 +301,52 @@ cursor:pointer;
 </main>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxpvyfuDMihL2g7w3nPEcp1pwbMNgpOMl9uYTxFzeL8RWUMqp3_bwZZNCFPeM7tke3dvg/exec";
+   const db = {
 
+cartoes: [],
+programacao: [],
+cadastros: [],
+finalizados: [],
+
+operadores: [],
+rondantes: [],
+supervisores: [],
+placas: [],
+motivos: [],
+locais: []
+
+};
+
+let rondaEmCurso = {};
+
+
+
+
+ const SUPABASE_URL = "https://uzrhxvecfamkthujialt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_sAFbGQn2k72FsBaxySLLcw_Jgcn27cY";
+const supabaseClient = supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+supabaseClient
+.channel("rondas-realtime")
+.on(
+"postgres_changes",
+{
+event:"*",
+schema:"public",
+table:"rondas"
+},
+payload=>{
+
+console.log("📡 Atualização recebida",payload);
+
+carregarRondasSupabase();
+
+}
+)
+.subscribe();
     let db = {
     cartoes: [],
     operadores: [],
@@ -360,7 +404,10 @@ function confirmarSenha() {
 document.addEventListener('DOMContentLoaded', async () => {
 
 restaurarBancoLocal();
-
+await carregarCartoesSupabase();
+await carregarCadastrosSupabase();
+await carregarProgramacaoSupabase();
+await carregarRondasSupabase();
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
@@ -1410,6 +1457,175 @@ inicio,
 final,
 status
 };
+
+}
+
+
+async function carregarCartoesSupabase(){
+
+const { data, error } = await supabaseClient
+.from("cartoes")
+.select("*")
+.order("numero",{ascending:true});
+
+if(error){
+console.log("Erro cartões:",error);
+return;
+}
+
+db.cartoes = data.map(c=>({
+
+num:c.numero,
+veiculo:c.veiculo,
+pontos: typeof c.pontos === "string"
+? JSON.parse(c.pontos)
+: c.pontos
+
+}));
+
+}
+
+
+async function carregarCadastrosSupabase(){
+
+const { data, error } = await supabaseClient
+.from("cadastros")
+.select("*");
+
+if(error){
+console.log("Erro cadastros:",error);
+return;
+}
+
+db.operadores=[];
+db.rondantes=[];
+db.supervisores=[];
+db.placas=[];
+db.motivos=[];
+db.locais=[];
+
+data.forEach(c=>{
+
+if(c.tipo==="Operador") db.operadores.push(c.nome);
+if(c.tipo==="Rondante") db.rondantes.push(c.nome);
+if(c.tipo==="Supervisor") db.supervisores.push(c.nome);
+if(c.tipo==="Placa") db.placas.push(c.nome);
+if(c.tipo==="Motivo") db.motivos.push(c.nome);
+if(c.tipo==="Local") db.locais.push(c.nome);
+
+});
+
+}
+
+
+async function carregarProgramacaoSupabase(){
+
+const { data, error } = await supabaseClient
+.from("programacao")
+.select("*");
+
+if(error){
+console.log("Erro programação:",error);
+return;
+}
+
+db.programacao = data;
+
+}
+
+
+async function carregarRondasSupabase(){
+
+const { data, error } = await supabaseClient
+.from("rondas")
+.select("*")
+.order("timestamp",{ascending:false});
+
+if(error){
+console.log("Erro rondas:",error);
+return;
+}
+
+db.finalizados = data.map(r=>[
+new Date(r.timestamp).toLocaleString(),
+r.viatura,
+r.cartao,
+r.operador,
+r.rondante,
+r.status,
+`${r.local} | Início ${r.inicio} | Final ${r.final}`
+]);
+
+renderizarHistorico();
+
+}
+
+async function salvarRondaSupabase(r){
+
+try{
+
+await supabaseClient
+.from("rondas")
+.insert([{
+
+timestamp:new Date().toISOString(),
+
+viatura:r.viatura,
+cartao:r.cartao,
+ponto:r.ponto,
+
+operador:r.operador,
+rondante:r.rondante,
+supervisor:r.supervisor,
+
+placa:r.placa,
+observacao:r.observacao,
+
+status:r.status,
+motivo:r.motivo,
+desvio:r.desvio,
+
+local:r.local,
+inicio:r.inicio,
+final:r.final
+
+}]);
+
+}catch(e){
+
+console.log("Erro salvar ronda",e);
+
+}
+
+}
+
+function popularTodosSelects(){
+
+if(!db) return;
+
+["V01","V02","V03","A02"].forEach(v=>{
+
+const cartao = document.getElementById(`sel_cartao_${v}`);
+
+if(cartao){
+
+const nome =
+v==="V01"?"VICTOR 01":
+v==="V02"?"VICTOR 02":
+v==="V03"?"VICTOR 03":
+"ALFA 02";
+
+const cartoes = db.cartoes
+.filter(c=>c.veiculo===nome)
+.sort((a,b)=>Number(a.num)-Number(b.num));
+
+cartao.innerHTML =
+'<option value="">Selecione</option>'+
+cartoes.map(c=>`<option value="${c.num}">${c.num}</option>`).join('');
+
+}
+
+});
 
 }
 
