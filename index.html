@@ -690,39 +690,77 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
 
 ["V01","V02","V03","A02"].forEach(v=>{
 
+/* CARTÕES */
+
+const cartao = document.getElementById(`sel_cartao_${v}`);
+
+if(cartao){
+
+const veiculoNome =
+v === "V01" ? "VICTOR 01" :
+v === "V02" ? "VICTOR 02" :
+v === "V03" ? "VICTOR 03" :
+"ALFA 02";
+
+const cartoesVeiculo = db.cartoes.filter(c => c.veiculo === veiculoNome);
+
+cartao.innerHTML =
+'<option value="">Selecione o cartão</option>' +
+cartoesVeiculo.map(c=>`<option value="${c.num}">${c.num}</option>`).join('');
+
+}
+
+/* OPERADOR */
+
 const op = document.getElementById(`sel_op_${v}`);
 if(op){
-op.innerHTML = '<option value="">Operador</option>' +
+op.innerHTML =
+'<option value="">Operador</option>' +
 db.operadores.map(o=>`<option>${o}</option>`).join('');
 }
 
+/* RONDANTE */
+
 const ron = document.getElementById(`sel_ron_${v}`);
 if(ron){
-ron.innerHTML = '<option value="">Rondante</option>' +
+ron.innerHTML =
+'<option value="">Rondante</option>' +
 db.rondantes.map(o=>`<option>${o}</option>`).join('');
 }
 
+/* SUPERVISOR */
+
 const sup = document.getElementById(`sel_sup_${v}`);
 if(sup){
-sup.innerHTML = '<option value="">Supervisor</option>' +
+sup.innerHTML =
+'<option value="">Supervisor</option>' +
 db.supervisores.map(o=>`<option>${o}</option>`).join('');
 }
 
+/* PLACA */
+
 const placa = document.getElementById(`sel_placa_${v}`);
 if(placa){
-placa.innerHTML = '<option value="">Placa</option>' +
+placa.innerHTML =
+'<option value="">Placa</option>' +
 db.placas.map(o=>`<option>${o}</option>`).join('');
 }
 
+/* MOTIVO */
+
 const motivo = document.getElementById(`sel_motivo_${v}`);
 if(motivo){
-motivo.innerHTML = '<option value="">Motivo</option>' +
+motivo.innerHTML =
+'<option value="">Motivo</option>' +
 db.motivos.map(o=>`<option>${o}</option>`).join('');
 }
 
+/* LOCAL */
+
 const local = document.getElementById(`sel_loc_ponto_${v}`);
 if(local){
-local.innerHTML = '<option value="">Local</option>' +
+local.innerHTML =
+'<option value="">Local</option>' +
 db.locais.map(o=>`<option>${o}</option>`).join('');
 }
 
@@ -1343,13 +1381,12 @@ return;
 
 }
 
-db.operadores = data.filter(c=>c.tipo==="operador").map(c=>c.nome);
-db.rondantes = data.filter(c=>c.tipo==="rondante").map(c=>c.nome);
-db.supervisores = data.filter(c=>c.tipo==="supervisor").map(c=>c.nome);
-db.placas = data.filter(c=>c.tipo==="placa").map(c=>c.nome);
-db.locais = data.filter(c=>c.tipo==="local").map(c=>c.nome);
-db.motivos = data.filter(c=>c.tipo==="motivo").map(c=>c.nome);
-
+db.operadores = data.filter(c=>c.tipo==="Operador").map(c=>c.nome);
+db.rondantes = data.filter(c=>c.tipo==="Rondante").map(c=>c.nome);
+db.supervisores = data.filter(c=>c.tipo==="Supervisor").map(c=>c.nome);
+db.placas = data.filter(c=>c.tipo==="Placa").map(c=>c.nome);
+db.locais = data.filter(c=>c.tipo==="Redirecionamento" || c.tipo==="Desvio").map(c=>c.nome);
+db.motivos = data.filter(c=>c.tipo==="Motivo").map(c=>c.nome);
 popularTodosSelects();
 
 }
