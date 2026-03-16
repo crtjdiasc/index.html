@@ -384,7 +384,7 @@ restaurarEstadoRondas();
 
 setInterval(verificarAlarmes, 10000);
 
-setInterval(sincronizarRondasEmAndamento,30000);
+// setInterval(sincronizarRondasEmAndamento,30000);
 
 // setInterval(()=>{
 
@@ -746,7 +746,7 @@ function iniciarSessaoRonda(vId) {
 
     rondaEmCurso[vId] = {
         num: num,
-        dataInicio: new Date().toLocaleString(),
+        dataInicio: new Date().toISOString(),
         pontosOriginais: [...cartao.pontos], // 🔹 copia os pontos para a ronda
         index: 0,
         respostas: [],
@@ -789,22 +789,6 @@ document.getElementById(ponto_anterior_${vId}).innerHTML =
     }
 
 
-async function salvarCartaoFinalizadoSupabase(finalizado) {
-    // finalizado = [
-    // 0: data/hora, 1: veiculo, 2: cartao, 3: placa, 4: operador, 5: rondante, 6: supervisor, 7: score, 8: detalhes
-    // ]
-
-    const registro = {
-        data_hora: finalizado[0],
-        veiculo: finalizado[1],
-        cartao: finalizado[2],
-        placa: finalizado[3],
-        operador: finalizado[4],
-        rondante: finalizado[5],
-        supervisor: finalizado[6],
-        score: finalizado[7],
-        detalhes: finalizado[8]
-    };
 
     const { data, error } = await supabaseClient
         .from("cartoes_finalizados") // 🔹 nome da tabela criada
@@ -1257,35 +1241,31 @@ for(const vId in rondaEmCurso){
 
 let r = rondaEmCurso[vId];
 
-if(!r || !r.respostas) continue;
+if(!r || !r.respostas || r.respostas.length === 0) continue;
 
-for(const resp of r.respostas){
+let ultima = r.respostas[r.respostas.length - 1];
 
 await salvarRondaSupabase({
-timestamp: new Date().toISOString(),
+timestamp: r.dataInicio,
 viatura: vId,
 cartao: r.num,
-ponto: resp.ponto,
+ponto: ultima.ponto,
 operador: r.op,
 rondante: r.ron,
 supervisor: r.sup,
 placa: r.placa,
 observacao: r.obs,
-local: resp.ponto,
-inicio: resp.hIni,
-final: resp.hFim,
-status: resp.status,
-motivo: resp.motivo,
-desvio: resp.desvio
+local: ultima.ponto,
+inicio: ultima.hIni,
+final: ultima.hFim,
+status: ultima.status,
+motivo: ultima.motivo,
+desvio: ultima.desvio
 });
 
 }
 
 }
-
-}
-
-
 async function salvarRondaSupabase(dados){
 
 const { data, error } = await supabaseClient
