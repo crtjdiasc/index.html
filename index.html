@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -385,6 +384,8 @@ restaurarEstadoRondas();
 
 setInterval(verificarAlarmes, 10000);
 
+setInterval(sincronizarRondasEmAndamento,30000);
+
 // setInterval(()=>{
 
 // sincronizarComPlanilha();
@@ -456,7 +457,7 @@ await carregarProgramacaoSupabase();
     }
 
     function dispararAlerta(ponto, hora) {
-        document.getElementById('txtAlarmePonto').innerText = `PONTO: ${ponto}`;
+        document.getElementById('txtAlarmePonto').innerText = PONTO: ${ponto};
         document.getElementById('modalAlarme').style.display = "flex";
         document.getElementById('audioAlarme').play().catch(e => {});
     }
@@ -512,7 +513,7 @@ await carregarProgramacaoSupabase();
 
     function renderizarPreviewPontos() {
         const div = document.getElementById('listaPontosPreview');
-        div.innerHTML = pontosTemporarios.map((p, i) => `<div>${i+1}. ${p}</div>`).join('');
+        div.innerHTML = pontosTemporarios.map((p, i) => <div>${i+1}. ${p}</div>).join('');
         if(pontosTemporarios.length === 25) div.style.borderColor = "var(--success)";
     }
 
@@ -552,20 +553,22 @@ else db.locais.push(nome);
         ordenarListas();
         salvarLocal();
         popularTodosSelects();
-        alert(`${tipo} cadastrado!`);
+        alert(${tipo} cadastrado!);
         document.getElementById('cad_aux_nome').value = "";
         await supabaseClient
 .from("cadastros")
-.insert([{
+.upsert([{
 tipo: tipo,
 nome: nome
-}]);
+}],{
+onConflict: "nome"
+});
     }
 
     function renderizarAbasVeiculos() {
         const veics = [{id: 'V01', n: 'VICTOR 01'}, {id: 'V02', n: 'VICTOR 02'}, {id: 'V03', n: 'VICTOR 03'}, {id: 'A02', n: 'ALFA 02'}];
         const container = document.getElementById('container-veiculos');
-        container.innerHTML = veics.map(v => `
+        container.innerHTML = veics.map(v => 
             <section id="aba-${v.id}" class="tab-content">
                 <div class="grid">
                     <div class="card">
@@ -641,7 +644,7 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
                         <button id="btn_fin_${v.id}" class="btn-main" style="margin-top:20px;" disabled onclick="finalizarRonda('${v.id}')">FINALIZAR E ENVIAR</button>
                     </div>
                 </div>
-            </section>`).join('');
+            </section>).join('');
     }
 
     function popularTodosSelects() {
@@ -649,49 +652,49 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
         const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
         ordenarListas();
         veicIds.forEach((id, idx) => {
-            const sCartao = document.getElementById(`sel_cartao_${id}`);
-            const sOp = document.getElementById(`sel_op_${id}`);
-            const sRon = document.getElementById(`sel_ron_${id}`);
-            const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
+            const sCartao = document.getElementById(sel_cartao_${id});
+            const sOp = document.getElementById(sel_op_${id});
+            const sRon = document.getElementById(sel_ron_${id});
+            const sLocPonto = document.getElementById(sel_loc_ponto_${id});
             if(!sCartao) return;
-const sMotivo = document.getElementById(`sel_motivo_${id}`);
+const sMotivo = document.getElementById(sel_motivo_${id});
 
 if(sMotivo){
-const sSup = document.getElementById(`sel_sup_${id}`);
-const sPlaca = document.getElementById(`sel_placa_${id}`);
+const sSup = document.getElementById(sel_sup_${id});
+const sPlaca = document.getElementById(sel_placa_${id});
 
 if(sSup){
 sSup.innerHTML =
 '<option value="">---</option>' +
-db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
+db.supervisores.map(o => <option value="${o}">${o}</option>).join('');
 }
 
 if(sPlaca){
 sPlaca.innerHTML =
 '<option value="">---</option>' +
-db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
+db.placas.map(o => <option value="${o}">${o}</option>).join('');
 }
 
 sMotivo.innerHTML =
 '<option value="">Sem Motivo</option>' +
-db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
+db.motivos.map(o => <option value="${o}">${o}</option>).join('');
 }
-            sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' + db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => `<option value="${c.num}">${c.num}</option>`).join('');
-            sOp.innerHTML = '<option value="">---</option>' + db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
-            sRon.innerHTML = '<option value="">---</option>' + db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
-            sLocPonto.innerHTML = '<option value="">Sem Desvio</option>' + db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
+            sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' + db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => <option value="${c.num}">${c.num}</option>).join('');
+            sOp.innerHTML = '<option value="">---</option>' + db.operadores.map(o => <option value="${o}">${o}</option>).join('');
+            sRon.innerHTML = '<option value="">---</option>' + db.rondantes.map(o => <option value="${o}">${o}</option>).join('');
+            sLocPonto.innerHTML = '<option value="">Sem Desvio</option>' + db.locais.map(o => <option value="${o}">${o}</option>).join('');
         });
     }
 
     function salvarEstadoTempoReal(vId) {
         if (!rondaEmCurso[vId]) return;
-        rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
-        rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
-        rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
-rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
-rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
-rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
-rondaEmCurso[vId].desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
+        rondaEmCurso[vId].op = document.getElementById(sel_op_${vId}).value;
+        rondaEmCurso[vId].ron = document.getElementById(sel_ron_${vId}).value;
+        rondaEmCurso[vId].obs = document.getElementById(obs_${vId}).value;
+rondaEmCurso[vId].sup = document.getElementById(sel_sup_${vId}).value;
+rondaEmCurso[vId].placa = document.getElementById(sel_placa_${vId}).value;
+rondaEmCurso[vId].motivo = document.getElementById(sel_motivo_${vId}).value;
+rondaEmCurso[vId].desvio = document.getElementById(sel_loc_ponto_${vId}).value;
         localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
 salvarLocal();
 salvarRondaEmAndamento(vId);
@@ -705,17 +708,17 @@ const r = rondaEmCurso[vId];
 
 if (r) {
 
-document.getElementById(`sel_cartao_${vId}`).value = r.num;
-document.getElementById(`sel_op_${vId}`).value = r.op || "";
-document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
-document.getElementById(`sel_sup_${vId}`).value = r.sup || "";
-document.getElementById(`sel_placa_${vId}`).value = r.placa || "";
-document.getElementById(`obs_${vId}`).value = r.obs || "";
+document.getElementById(sel_cartao_${vId}).value = r.num;
+document.getElementById(sel_op_${vId}).value = r.op || "";
+document.getElementById(sel_ron_${vId}).value = r.ron || "";
+document.getElementById(sel_sup_${vId}).value = r.sup || "";
+document.getElementById(sel_placa_${vId}).value = r.placa || "";
+document.getElementById(obs_${vId}).value = r.obs || "";
 
 /* 🔴 ADICIONE ISTO */
 
-document.getElementById(`sel_motivo_${vId}`).value = r.motivo || "";
-document.getElementById(`sel_loc_ponto_${vId}`).value = r.desvio || "";
+document.getElementById(sel_motivo_${vId}).value = r.motivo || "";
+document.getElementById(sel_loc_ponto_${vId}).value = r.desvio || "";
 
 if (r.index < 25) atualizarInterfaceRonda(vId);
 
@@ -725,39 +728,65 @@ if (r.index < 25) atualizarInterfaceRonda(vId);
 
 }
 // ──────────────── INICIAR SESSÃO DE RONDA ────────────────
+function iniciarSessaoRonda(vId) {
+    const num = document.getElementById(sel_cartao_${vId}).value;
+    if (!num) return;
 
-function atualizarInterfaceRonda(vId) {
-    const ronda = rondaEmCurso[vId];
+    const veiculosMap = { V01: "VICTOR 01", V02: "VICTOR 02", V03: "VICTOR 03", A02: "ALFA 02" };
+    const nomeVeiculo = veiculosMap[vId];
 
-    if (!ronda || !ronda.pontosOriginais || ronda.pontosOriginais.length === 0) {
-        document.getElementById(`painelPonto_${vId}`).innerText = "AGUARDANDO SELEÇÃO";
-        document.getElementById(`contadorPonto_${vId}`).innerText = "0/0";
-        document.getElementById(`horaInicio_${vId}`).innerText = "--:--";
-        document.getElementById(`horaFinal_${vId}`).value = "";
-        document.getElementById(`motivo_${vId}`).value = "";
-        document.getElementById(`desvio_${vId}`).value = "";
-        document.getElementById(`obs_${vId}`).value = "";
-        document.getElementById(`sup_${vId}`).value = "";
-        document.getElementById(`btn_fin_${vId}`).disabled = true;
+    let cartao = db.cartoes.find(c => c.num === num && c.veiculo === nomeVeiculo);
+    if (!cartao) {
+        alert("⚠️ Cartão não encontrado para este veículo.");
         return;
     }
 
-    const pontoAtual = ronda.pontosOriginais[ronda.index] || "---";
+    // 🔹 garante que pontos sejam array
+    if (typeof cartao.pontos === "string") cartao.pontos = JSON.parse(cartao.pontos);
 
-    document.getElementById(`painelPonto_${vId}`).innerText = pontoAtual;
-    document.getElementById(`contadorPonto_${vId}`).innerText = `${ronda.index + 1}/${ronda.pontosOriginais.length}`;
-    document.getElementById(`horaInicio_${vId}`).innerText = ronda.dataInicio;
-    document.getElementById(`horaFinal_${vId}`).value = "";
-    document.getElementById(`motivo_${vId}`).value = ronda.motivo || "";
-    document.getElementById(`desvio_${vId}`).value = ronda.desvio || "";
-    document.getElementById(`obs_${vId}`).value = ronda.obs || "";
-    document.getElementById(`sup_${vId}`).value = ronda.sup || "";
+    rondaEmCurso[vId] = {
+        num: num,
+        dataInicio: new Date().toLocaleString(),
+        pontosOriginais: [...cartao.pontos], // 🔹 copia os pontos para a ronda
+        index: 0,
+        respostas: [],
+        op: "",
+        ron: "",
+        obs: "",
+        sup: "",
+        placa: "",
+        motivo: "",
+        desvio: ""
+    };
 
-    // Botão FINALIZAR habilitado apenas no último ponto
-    document.getElementById(`btn_fin_${vId}`).disabled = (ronda.index + 1 < ronda.pontosOriginais.length);
+    salvarEstadoTempoReal(vId);
+    salvarRondaEmAndamento(vId);
+    atualizarInterfaceRonda(vId);
+    document.getElementById(btn_fin_${vId}).disabled = true;
+}    
+    function atualizarInterfaceRonda(vId) {
+        let r = rondaEmCurso[vId];
+
+let pontoAnterior = r.index > 0 ? r.pontosOriginais[r.index - 1] : "---";
+
+document.getElementById(ponto_anterior_${vId}).innerText =
+PONTO ANTERIOR: ${pontoAnterior};
+        document.getElementById(nome_ponto_${vId}).innerText = PONTO: ${r.pontosOriginais[r.index]};
+        document.getElementById(cont_ponto_${vId}).innerText = PONTO ${r.index + 1} / 25;
+if(r.respostas && r.respostas.length > 0){
+
+let historico = montarHistoricoPontos(r.respostas);
+
+document.getElementById(ponto_anterior_${vId}).innerHTML =
+<span style="color:red;font-weight:bold;">ÚLTIMO REGISTRO:</span><br>${historico};
+
 }
-
-
+        document.getElementById(bar_${vId}).style.width = (r.index / 25 * 100) + "%";
+        
+        // Captura o horário de início do ponto no momento que ele aparece
+        const agora = new Date();
+        document.getElementById(h_ini_${vId}).innerText = agora.toLocaleTimeString('pt-BR');
+    }
 
 
 async function salvarCartaoFinalizadoSupabase(finalizado) {
@@ -796,7 +825,7 @@ async function salvarCartaoFinalizadoSupabase(finalizado) {
     
     // INCLUINDO O DESVIO NA STRING DE DETALHES
     const detalhesFormatados = r.respostas.map(x => 
-       `${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Motivo: ${x.motivo} | Desvio: ${x.desvio}`
+       ${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Motivo: ${x.motivo} | Desvio: ${x.desvio}
     ).join(' || ');
 
     const valores = [
@@ -882,20 +911,20 @@ function gerarPDFIndividual(index) {
 
     let y = 30;
 
-    doc.text(`Data/Hora: ${r[0]}`, 15, y);
+    doc.text(Data/Hora: ${r[0]}, 15, y);
     y += 8;
-    doc.text(`Veículo: ${r[1]}`, 15, y);
+    doc.text(Veículo: ${r[1]}, 15, y);
     y += 8;
-    doc.text(`Cartão: ${r[2]}`, 15, y);
+    doc.text(Cartão: ${r[2]}, 15, y);
     y += 8;
-    doc.text(`Operador: ${r[3]}`, 15, y);
+    doc.text(Operador: ${r[3]}, 15, y);
     y += 8;
-    doc.text(`Rondante: ${r[4]}`, 15, y);
+    doc.text(Rondante: ${r[4]}, 15, y);
     y += 8;
 
     doc.setFontSize(13);
     doc.setTextColor(242, 145, 0);
-    doc.text(`Score Final: ${r[5]}`, 15, y);
+    doc.text(Score Final: ${r[5]}, 15, y);
     y += 12;
 
     doc.setTextColor(0,0,0);
@@ -914,7 +943,7 @@ function gerarPDFIndividual(index) {
         }
     });
 
-    doc.save(`Ronda_${r[2]}_${r[0].replace(/[/:]/g,'-')}.pdf`);
+    doc.save(Ronda_${r[2]}_${r[0].replace(/[/:]/g,'-')}.pdf);
 }
 
 
@@ -1000,12 +1029,12 @@ async function registrarAcao(vId, isOk){
     let r = rondaEmCurso[vId];
     if(!r || r.index >= 25) return;
     
-    const hFim = document.getElementById(`h_fim_${vId}`).value;
+    const hFim = document.getElementById(h_fim_${vId}).value;
     if(!hFim) { alert("⚠️ Por favor, registre a HORA FINAL do ponto."); return; }
 
-    const desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
-const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo";
-    const hIni = document.getElementById(`h_ini_${vId}`).innerText;
+    const desvio = document.getElementById(sel_loc_ponto_${vId}).value;
+const motivo = document.getElementById(sel_motivo_${vId}).value || "Sem Motivo";
+    const hIni = document.getElementById(h_ini_${vId}).innerText;
 
    const pontoAtual = r.pontosOriginais[r.index];
 
@@ -1021,7 +1050,7 @@ const respostaAtual = {
    r.respostas.push(respostaAtual);
 
 await salvarRondaSupabase({
-    timestamp: new Date().toISOString(),
+    timestamp: r.dataInicio,
     viatura: vId,
     cartao: r.num,
     ponto: respostaAtual.ponto,
@@ -1043,10 +1072,10 @@ if (r.index < r.pontosOriginais.length - 1) {
     atualizarInterfaceRonda(vId);
 } else {
     // terminou a ronda
-    document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
-    document.getElementById(`bar_${vId}`).style.width = "100%";
-    document.getElementById(`cont_ponto_${vId}`).innerText = "PONTO 25 / 25";
-    document.getElementById(`btn_fin_${vId}`).disabled = false;
+    document.getElementById(nome_ponto_${vId}).innerText = "RONDA CONCLUÍDA";
+    document.getElementById(bar_${vId}).style.width = "100%";
+    document.getElementById(cont_ponto_${vId}).innerText = "PONTO 25 / 25";
+    document.getElementById(btn_fin_${vId}).disabled = false;
 }
 
     salvarRondaEmAndamento(vId);
@@ -1057,15 +1086,15 @@ if (r.index < r.pontosOriginais.length - 1) {
     if(r.index < 25) {
         atualizarInterfaceRonda(vId);
     } else {
-        document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
-        document.getElementById(`bar_${vId}`).style.width = "100%";
-        document.getElementById(`btn_fin_${vId}`).disabled = false;
+        document.getElementById(nome_ponto_${vId}).innerText = "RONDA CONCLUÍDA";
+        document.getElementById(bar_${vId}).style.width = "100%";
+        document.getElementById(btn_fin_${vId}).disabled = false;
     }
 
 // limpa apenas os campos de desvio após registrar o ponto
-document.getElementById(`sel_motivo_${vId}`).value = "";
-document.getElementById(`sel_loc_ponto_${vId}`).value = "";
-    document.getElementById(`h_fim_${vId}`).value = "";
+document.getElementById(sel_motivo_${vId}).value = "";
+document.getElementById(sel_loc_ponto_${vId}).value = "";
+    document.getElementById(h_fim_${vId}).value = "";
 
 }
 
@@ -1087,11 +1116,12 @@ return;
 
 const { error } = await supabaseClient
 .from("programacao")
-.insert([{
+.upsert([{
 ponto: ponto,
 hora: hora
-}]);
-
+}],{
+onConflict: "hora,ponto"
+});
 
 if(error){
 console.log("Erro ao salvar:",error);
@@ -1113,7 +1143,7 @@ function renderizarProgramacao() {
 
     corpo.innerHTML = db.programacao.length === 0 
         ? '<tr><td colspan="3" style="text-align:center;">Nenhum horário agendado</td></tr>' 
-        : db.programacao.map((p, i) => `
+        : db.programacao.map((p, i) => 
             <tr>
                 <td style="font-weight:bold; color:var(--samarco-blue);">${p.hora}</td>
                 <td>${p.ponto}</td>
@@ -1123,28 +1153,28 @@ function renderizarProgramacao() {
                         Remover
                     </button>
                 </td>
-            </tr>`).join('');
+            </tr>).join('');
 
 
 }
 function limparFormulario(vId){
 
-document.getElementById(`sel_cartao_${vId}`).value="";
-document.getElementById(`sel_op_${vId}`).value="";
-document.getElementById(`sel_ron_${vId}`).value="";
-document.getElementById(`sel_sup_${vId}`).value="";
-document.getElementById(`sel_placa_${vId}`).value="";
-document.getElementById(`obs_${vId}`).value="";
+document.getElementById(sel_cartao_${vId}).value="";
+document.getElementById(sel_op_${vId}).value="";
+document.getElementById(sel_ron_${vId}).value="";
+document.getElementById(sel_sup_${vId}).value="";
+document.getElementById(sel_placa_${vId}).value="";
+document.getElementById(obs_${vId}).value="";
 
-document.getElementById(`sel_motivo_${vId}`).value="";
-document.getElementById(`sel_loc_ponto_${vId}`).value="";
+document.getElementById(sel_motivo_${vId}).value="";
+document.getElementById(sel_loc_ponto_${vId}).value="";
 
-document.getElementById(`nome_ponto_${vId}`).innerText="AGUARDANDO SELEÇÃO";
-document.getElementById(`bar_${vId}`).style.width="0%";
-document.getElementById(`cont_ponto_${vId}`).innerText="PONTO 1 / 25";
+document.getElementById(nome_ponto_${vId}).innerText="AGUARDANDO SELEÇÃO";
+document.getElementById(bar_${vId}).style.width="0%";
+document.getElementById(cont_ponto_${vId}).innerText="PONTO 1 / 25";
 
-document.getElementById(`h_ini_${vId}`).innerText="--:--:--";
-document.getElementById(`h_fim_${vId}`).value="";
+document.getElementById(h_ini_${vId}).innerText="--:--:--";
+document.getElementById(h_fim_${vId}).value="";
 
 }
 function sincronizarTudo(){
@@ -1171,7 +1201,7 @@ let icone = ultimo ? "🔴" : "✔";
 
 let atual = ultimo ? " (ATUAL)" : "";
 
-html+=`
+html+=
 <div style="
 padding:4px;
 color:${ultimo ? "red":"white"};
@@ -1189,7 +1219,7 @@ Status: ${p.status}
 </div>
 
 </div>
-`;
+;
 
 });
 
@@ -1220,22 +1250,57 @@ status
 
 } 
 
-async function salvarRondaSupabase(dados){
 
-    const { data, error } =await supabaseClient
-.from("rondas")
-.insert([dados]);
+async function sincronizarRondasEmAndamento(){
 
-    if(error){
-        console.log("❌ Erro ao salvar:", error);
-    }else{
-        console.log("✅ Ronda salva no banco");
-    }
+for(const vId in rondaEmCurso){
+
+let r = rondaEmCurso[vId];
+
+if(!r || !r.respostas) continue;
+
+for(const resp of r.respostas){
+
+await salvarRondaSupabase({
+timestamp: new Date().toISOString(),
+viatura: vId,
+cartao: r.num,
+ponto: resp.ponto,
+operador: r.op,
+rondante: r.ron,
+supervisor: r.sup,
+placa: r.placa,
+observacao: r.obs,
+local: resp.ponto,
+inicio: resp.hIni,
+final: resp.hFim,
+status: resp.status,
+motivo: resp.motivo,
+desvio: resp.desvio
+});
+
+}
+
+}
 
 }
 
 
-async function carregarRondasSupabase(){
+async function salvarRondaSupabase(dados){
+
+const { data, error } = await supabaseClient
+.from("rondas")
+.upsert([dados], {
+onConflict: "timestamp,viatura,ponto"
+});
+
+if(error){
+console.log("❌ Erro ao salvar:", error);
+}else{
+console.log("✅ Ronda sincronizada (UPSERT)");
+}
+
+}async function carregarRondasSupabase(){
 
 const { data, error } = await supabaseClient
 .from("rondas")
@@ -1255,7 +1320,7 @@ r.cartao,
 r.operador,
 r.rondante,
 r.status,
-`${r.local} | Início ${r.inicio} | Final ${r.final}`
+${r.local} | Início ${r.inicio} | Final ${r.final}
 ]);
 
 renderizarHistorico();
@@ -1277,11 +1342,13 @@ async function enviarCartaoPlanilha() {
 
     const { error } = await supabaseClient
         .from("cartoes")
-        .insert([{
-            numero: cartao.num,
-            veiculo: cartao.veiculo,
-            pontos: JSON.stringify(cartao.pontos) // 🔹 salvar como JSON
-        }]);
+        .upsert([{
+numero: cartao.num,
+veiculo: cartao.veiculo,
+pontos: JSON.stringify(cartao.pontos)
+}],{
+onConflict: "numero"
+});
 
     if (error) {
         console.log("Erro ao salvar cartão:", error);
@@ -1398,67 +1465,7 @@ async function salvarCartaoFinalizadoSupabase(finalizado) {
     }
 }
 
-async function iniciarSessaoRonda(vId) {
-    const select = document.getElementById(`sel_cartao_${vId}`);
-    const num = select.value;
-    if (!num) return;
 
-    const veiculosMap = { V01: "VICTOR 01", V02: "VICTOR 02", V03: "VICTOR 03", A02: "ALFA 02" };
-    const nomeVeiculo = veiculosMap[vId];
-
-    // 🔹 Busca o cartão no Supabase
-    const { data: cartoes, error } = await supabase
-        .from('cartoes')
-        .select('*')
-        .eq('num', num)
-        .eq('veiculo', nomeVeiculo)
-        .limit(1);
-
-    if (error) {
-        console.error("Erro Supabase:", error);
-        alert("Erro ao buscar cartão no banco.");
-        return;
-    }
-
-    if (!cartoes || cartoes.length === 0) {
-        alert("⚠️ Cartão não encontrado para este veículo.");
-        return;
-    }
-
-    let cartao = cartoes[0];
-
-    // 🔹 Garante que pontos sejam array
-    if (typeof cartao.pontos === "string") {
-        try {
-            cartao.pontos = JSON.parse(cartao.pontos);
-        } catch (e) {
-            console.error("Erro ao converter pontos do Supabase:", e);
-            cartao.pontos = [];
-        }
-    }
-
-    // 🔹 Inicializa a ronda em andamento
-    rondaEmCurso[vId] = {
-        num: num,
-        dataInicio: new Date().toLocaleString(),
-        pontosOriginais: [...cartao.pontos],
-        index: 0,
-        respostas: [],
-        op: "",
-        ron: "",
-        obs: "",
-        sup: "",
-        placa: "",
-        motivo: "",
-        desvio: ""
-    };
-
-    // 🔹 Salva estado e atualiza painel
-    salvarEstadoTempoReal(vId);
-    salvarRondaEmAndamento(vId);
-    atualizarInterfaceRonda(vId);
-    document.getElementById(`btn_fin_${vId}`).disabled = true;
-}
 
 </script>
 
