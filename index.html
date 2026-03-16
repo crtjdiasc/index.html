@@ -457,7 +457,7 @@ await carregarProgramacaoSupabase();
     }
 
     function dispararAlerta(ponto, hora) {
-        document.getElementById('txtAlarmePonto').innerText = PONTO: ${ponto};
+       document.getElementById('txtAlarmePonto').innerText = `PONTO: ${ponto}`;
         document.getElementById('modalAlarme').style.display = "flex";
         document.getElementById('audioAlarme').play().catch(e => {});
     }
@@ -513,7 +513,7 @@ await carregarProgramacaoSupabase();
 
     function renderizarPreviewPontos() {
         const div = document.getElementById('listaPontosPreview');
-        div.innerHTML = pontosTemporarios.map((p, i) => <div>${i+1}. ${p}</div>).join('');
+        div.innerHTML = pontosTemporarios.map((p, i) => `<div>${i+1}. ${p}</div>`).join('');
         if(pontosTemporarios.length === 25) div.style.borderColor = "var(--success)";
     }
 
@@ -553,7 +553,7 @@ else db.locais.push(nome);
         ordenarListas();
         salvarLocal();
         popularTodosSelects();
-        alert(${tipo} cadastrado!);
+        alert(`${tipo} cadastrado!`);
         document.getElementById('cad_aux_nome').value = "";
         await supabaseClient
 .from("cadastros")
@@ -568,8 +568,8 @@ onConflict: "nome"
     function renderizarAbasVeiculos() {
         const veics = [{id: 'V01', n: 'VICTOR 01'}, {id: 'V02', n: 'VICTOR 02'}, {id: 'V03', n: 'VICTOR 03'}, {id: 'A02', n: 'ALFA 02'}];
         const container = document.getElementById('container-veiculos');
-        container.innerHTML = veics.map(v => 
-            <section id="aba-${v.id}" class="tab-content">
+        container.innerHTML = veics.map(v => `
+<section id="aba-${v.id}" class="tab-content">
                 <div class="grid">
                     <div class="card">
                         <h3>Operação: ${v.n}</h3>
@@ -644,7 +644,8 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
                         <button id="btn_fin_${v.id}" class="btn-main" style="margin-top:20px;" disabled onclick="finalizarRonda('${v.id}')">FINALIZAR E ENVIAR</button>
                     </div>
                 </div>
-            </section>).join('');
+            </section>
+`).join('');
     }
 
     function popularTodosSelects() {
@@ -652,7 +653,7 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
         const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
         ordenarListas();
         veicIds.forEach((id, idx) => {
-            const sCartao = document.getElementById(sel_cartao_${id});
+            const sCartao = document.getElementById(`sel_cartao_${id}`);
             const sOp = document.getElementById(sel_op_${id});
             const sRon = document.getElementById(sel_ron_${id});
             const sLocPonto = document.getElementById(sel_loc_ponto_${id});
@@ -769,9 +770,9 @@ function iniciarSessaoRonda(vId) {
 
 let pontoAnterior = r.index > 0 ? r.pontosOriginais[r.index - 1] : "---";
 
-document.getElementById(ponto_anterior_${vId}).innerText =
-PONTO ANTERIOR: ${pontoAnterior};
-        document.getElementById(nome_ponto_${vId}).innerText = PONTO: ${r.pontosOriginais[r.index]};
+document.getElementById(`ponto_anterior_${vId}`).innerText =
+`PONTO ANTERIOR: ${pontoAnterior}`;
+        document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
         document.getElementById(cont_ponto_${vId}).innerText = PONTO ${r.index + 1} / 25;
 if(r.respostas && r.respostas.length > 0){
 
@@ -1265,7 +1266,6 @@ desvio: ultima.desvio
 
 }
 
-}
 async function salvarRondaSupabase(dados){
 
 const { data, error } = await supabaseClient
