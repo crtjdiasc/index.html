@@ -326,6 +326,29 @@ SUPABASE_KEY
     finalizados: [],
     programacao: []
 };
+
+
+// Função Mestra de Upsert para qualquer tabela
+async function upsertDadosSupabase(tabela, objeto, conflito) {
+    try {
+        const { data, error } = await supabaseClient
+            .from(tabela)
+            .upsert(objeto, { onConflict: conflito });
+
+        if (error) {
+            console.error(`Erro no Upsert da tabela ${tabela}:`, error.message);
+        } else {
+            console.log(`Sincronização OK na tabela ${tabela}`);
+        }
+    } catch (err) {
+        console.error("Falha na comunicação com Supabase:", err);
+    }
+}
+
+
+
+
+
 function restaurarBancoLocal() {
     const bancoSalvo = localStorage.getItem("smartcard_db");
 
@@ -535,7 +558,49 @@ console.log("Cartão salvo");
 
 }
 
-    async function enviarAuxiliar() {
+// Atualização da função de salvar Cartão com Upsert
+async function enviarCartaoPlanilha() {
+    const num = document.getElementById('cad_cartao_num').value;
+    const veic = document.getElementById('cad_cartao_veic').value;
+
+    if (!num || pontosTemporarios.length !== 25) {
+        alert("Preencha o número e adicione os 25 pontos.");
+        return;
+    }
+
+    const objetoCartao = {
+        numero: num,
+        veiculo: veic,
+        pontos: JSON.stringify(pontosTemporarios)
+    };
+
+    // 'numero, veiculo' são as colunas de conflito que você definiu no SQL
+    await upsertDadosSupabase('cartoes', objetoCartao, 'numero, veiculo');
+    
+    alert("Cartão Sincronizado!");
+    pontosTemporarios = [];
+    document.getElementById('cad_cartao_num').value = "";
+    renderizarPreviewPontos();
+    carregarCartoesSupabase();
+}
+
+// Atualização de Cadastros Auxiliares com Upsert
+async function enviarAuxiliar() {
+    const nome = document.getElementById('cad_aux_nome').value;
+    const tipo = document.getElementById('cad_aux_tipo').value;
+    if(!nome) return;
+
+    const objetoAux = { tipo: tipo, nome: nome };
+    
+    await upsertDadosSupabase('cadastros', objetoAux, 'nome, tipo');
+
+    alert(`${tipo} sincronizado com sucesso!`);
+    document.getElementById('cad_aux_nome').value = "";
+    carregarCadastrosSupabase();
+}
+
+
+    // async function enviarAuxiliar() {
         const nome = document.getElementById('cad_aux_nome').value;
         const tipo = document.getElementById('cad_aux_tipo').value;
         if(!nome) return;
@@ -688,18 +753,47 @@ db.motivos.map(o => <option value="${o}">${o}</option>).join('');
     }
 
     function salvarEstadoTempoReal(vId) {
-        if (!rondaEmCurso[vId]) return;
-        rondaEmCurso[vId].op = document.getElementById(sel_op_${vId}).value;
-        rondaEmCurso[vId].ron = document.getElementById(sel_ron_${vId}).value;
-        rondaEmCurso[vId].obs = document.getElementById(obs_${vId}).value;
-rondaEmCurso[vId].sup = document.getElementById(sel_sup_${vId}).value;
-rondaEmCurso[vId].placa = document.getElementById(sel_placa_${vId}).value;
-rondaEmCurso[vId].motivo = document.getElementById(sel_motivo_${vId}).value;
-rondaEmCurso[vId].desvio = document.getElementById(sel_loc_ponto_${vId}).value;
-        localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
-salvarLocal();
-salvarRondaEmAndamento(vId);
+    if (!rondaEmCurso[vId]) return;
+
+    // 1. Atualiza o objeto na memória e LocalStorage
+    rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
+    rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
+    rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
+    rondaEmCurso[vId].sup = document.getElementById(`sel_sup_${vId}`).value;
+    rondaEmCurso[vId].placa = document.getElementById(`sel_placa_${vId}`).value;
+    rondaEmCurso[vId].motivo = document.getElementById(`sel_motivo_${vId}`).value;
+    rondaEmCurso[vId].desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
+
+    localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+    salvarLocal();
+
+    // 2. Automação Upsert para o Supabase
+    const r = rondaEmCurso[vId];
+    if (r && r.num) {
+        const objetoRondaAtiva = {
+            veiculo_id: vId,       // Chave de conflito (VICTOR 01, etc)
+            cartao_num: r.num,
+            operador: r.op,
+            rondante: r.ron,
+            supervisor: r.sup,     // Adicionei essas colunas para seu banco ficar completo
+            placa: r.placa,
+            index_atual: r.index,
+            observacoes: r.obs,
+            motivo: r.motivo,
+            desvio_local: r.desvio,
+            data_inicio: r.dataInicio,
+            ultima_atualizacao: new Date().toISOString() // Importante para auditoria
+        };
+
+        // Envia para a tabela 'rondas' no Supabase
+        upsertDadosSupabase('rondas', objetoRondaAtiva, 'veiculo_id');
     }
+
+    // Se você tiver essa função separada, mantenha-a
+    if (typeof salvarRondaEmAndamento === "function") {
+        salvarRondaEmAndamento(vId);
+    }
+}
 
    function restaurarEstadoRondas() {
 
@@ -1085,42 +1179,23 @@ document.getElementById(sel_loc_ponto_${vId}).value = "";
 // SALVA UM REGISTRO NA PLANILHA GOOGLE
 
 // ADICIONA HORÁRIO NA ABA E SINCRONIZA
-async function adicionarHorario(){
+async function adicionarHorario() {
+    const ponto = document.getElementById('prog_ponto').value;
+    const hora = document.getElementById('prog_hora').value;
 
-const inputPonto = document.getElementById('prog_ponto');
-const inputHora = document.getElementById('prog_hora');
+    if (!ponto || !hora) return;
 
-const ponto = inputPonto.value.trim();
-const hora = inputHora.value;
+    const objetoProg = { ponto: ponto, hora: hora };
 
-if(!ponto || !hora){
-alert("⚠️ Preencha os campos!");
-return;
+    // Impede horários duplicados para o mesmo ponto
+    await upsertDadosSupabase('programacao', objetoProg, 'hora, ponto');
+    
+    await carregarProgramacaoSupabase();
+    document.getElementById('prog_ponto').value = "";
 }
 
-const { error } = await supabaseClient
-.from("programacao")
-.upsert([{
-ponto: ponto,
-hora: hora
-}],{
-onConflict: "hora,ponto"
-});
 
-if(error){
-console.log("Erro ao salvar:",error);
-alert("Erro ao salvar programação");
-return;
-}
-
-await carregarProgramacaoSupabase();
-
-inputPonto.value="";
-inputHora.value="";
-
-alert("Programação salva");
-
-}// RENDERIZA OS HORÁRIOS CADASTRADOS
+// RENDERIZA OS HORÁRIOS CADASTRADOS
 function renderizarProgramacao() {
     const corpo = document.getElementById('corpoProgramacao');
     if(!corpo) return;
@@ -1307,7 +1382,7 @@ atualizarDash();
 
 }
 // ──────────────── ENVIAR CARTÃO PARA SUPABASE ────────────────
-async function enviarCartaoPlanilha() {
+// async function enviarCartaoPlanilha() {
     const cartao = {
         num: document.getElementById("cad_cartao_num").value.trim(),
         veiculo: document.getElementById("cad_cartao_veic").value,
