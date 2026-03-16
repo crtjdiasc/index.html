@@ -230,24 +230,20 @@
     style="background:#f39c12; color:white; border:none; padding:10px; border-radius:4px;">
     Limpar Dados com Erro
 </button>
-<button onclick="limpezaForcadaTotal()"
-style="background:#000;color:white;padding:10px;border:none;border-radius:4px;">
-LIMPEZA TOTAL REAL
-</button>
             </div>
             <div style="overflow-x: auto;">
                 <table id="tabelaFinalizados">
                    <thead>
-<tr>
-    <th>Data/Hora<br><input onkeyup="filtrarTabela(0,this.value)" placeholder="Filtrar"></th>
-    <th>Veículo<br><input onkeyup="filtrarTabela(1,this.value)" placeholder="Filtrar"></th>
-    <th>Cartão<br><input onkeyup="filtrarTabela(2,this.value)" placeholder="Filtrar"></th>
-    <th>Operador<br><input onkeyup="filtrarTabela(3,this.value)" placeholder="Filtrar"></th>
-    <th>Rondante<br><input onkeyup="filtrarTabela(4,this.value)" placeholder="Filtrar"></th>
-    <th>Score<br><input onkeyup="filtrarTabela(5,this.value)" placeholder="Filtrar"></th>
-    <th>Status Pontos<br><input onkeyup="filtrarTabela(6,this.value)" placeholder="Filtrar"></th>
-    <th>Ações</th>
-</tr>
+    <tr>
+        <th>Data/Hora</th>
+        <th>Veículo</th>
+        <th>Cartão</th>
+        <th>Operador</th>
+        <th>Rondante</th>
+        <th>Score</th>
+        <th>Status Pontos</th>
+        <th>Ações</th>
+    </tr>
 </thead>
                     <tbody id="corpoFinalizados"></tbody>
                 </table>
@@ -284,35 +280,11 @@ LIMPEZA TOTAL REAL
     finalizados: [],
     programacao: []
 };
-function restaurarBancoLocal() {
-    const bancoSalvo = localStorage.getItem("smartcard_db");
 
-    if (bancoSalvo) {
-        db = JSON.parse(bancoSalvo);
-        console.log("✅ Banco restaurado do navegador");
-    }
-}
     let pontosTemporarios = [];
     let rondaEmCurso = JSON.parse(localStorage.getItem('ronda_em_curso')) || {};
     let ultimoAlarmeConfirmado = "";
     let chartInstance = null;
-
-
-// 🔐 SENHA DOS BOTÕES DE LIMPEZA
-const SENHA_LIMPEZA = "123456"; // troque pela sua senha
-
-function confirmarSenha() {
-    const senhaDigitada = prompt("🔐 Digite a senha para confirmar:");
-
-    if (!senhaDigitada) return false;
-
-    if (senhaDigitada === SENHA_LIMPEZA) {
-        return true;
-    } else {
-        alert("❌ Senha incorreta!");
-        return false;
-    }
-}
 
     function atualizarRelogio() {
         const elRelogio = document.getElementById('relogio');
@@ -322,21 +294,19 @@ function confirmarSenha() {
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-restaurarBancoLocal();
-     atualizarRelogio();
+        atualizarRelogio();
         setInterval(atualizarRelogio, 1000);
         renderizarAbasVeiculos();
         popularTodosSelects();
         restaurarEstadoRondas();
-
-          
- renderizarProgramacao();
+        renderizarProgramacao();
         renderizarHistorico();
         setInterval(verificarAlarmes, 10000);
         atualizarDash();
         sincronizarComPlanilha();
-
-
+setInterval(() => {
+    sincronizarComPlanilha();
+}, 15000);
 
     });
 
@@ -346,14 +316,11 @@ restaurarBancoLocal();
         const data = await response.json();
 
         // Limpa tudo antes de recriar
-        const novoDB = {
-    cartoes: [],
-    operadores: [],
-    rondantes: [],
-    locais: [],
-    finalizados: [],
-    programacao: db.programacao // mantém programação local
-};
+        db.cartoes = [];
+        db.operadores = [];
+        db.rondantes = [];
+        db.locais = [];
+        db.finalizados = [];
 
         // ==========================
         // LENDO ABA CADASTROS
@@ -366,15 +333,15 @@ restaurarBancoLocal();
 const nome = linha[2];
 
 if (tipo === "Operador") {
-    novoDB.operadores.push(nome);
+    db.operadores.push(nome);
 }
 
 else if (tipo === "Rondante") {
-    novoDB.rondantes.push(nome);
+    db.rondantes.push(nome);
 }
 
 else if (tipo === "Desvio" || tipo === "Redirecionamento") {
-    novoDB.locais.push(nome);
+    db.locais.push(nome);
 }
 
 
@@ -390,11 +357,11 @@ else if (tipo && tipo.toUpperCase().includes("CART")) {
         ? pontosRaw.split("|")
         : [];
 
-   novoDB.cartoes.push({
-    num: numero,
-    veiculo: veiculo,
-    pontos: pontos
-});
+    db.cartoes.push({
+        num: numero,
+        veiculo: veiculo,
+        pontos: pontos
+    });
 }
 
 // LOCAIS (Desvio e Redirecionamento)
@@ -402,32 +369,44 @@ else if (tipo && tipo.toUpperCase().includes("CART")) {
             });
         }
 
-       // ==========================
-// FINALIZADOS LIMPOS E FILTRADOS
+        // ==========================
+        // FINALIZADOS
+        // ==========================
+        // ==========================
+// FINALIZADOS (FORÇA SINCRONIZAÇÃO TOTAL)
 // ==========================
+db.finalizados = [];
 
 // ==========================
-// FINALIZADOS (PADRÃO ARRAY)
+// FINALIZADOS (SINCRONIZAÇÃO 100% REAL)
 // ==========================
+
 if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
-    novoDB.finalizados = data.CartoesFinalizados;
+
+    // SUBSTITUI COMPLETAMENTE
+    db.finalizados = data.CartoesFinalizados
+        .slice(1) // remove cabeçalho da planilha
+        .filter(l => l && l[0])
+        .map(l => [
+            l[0],
+            l[1],
+            l[2],
+            l[3],
+            l[4],
+            l[5],
+            l[6]
+        ]);
+
 } else {
-    novoDB.finalizados = [];
+    db.finalizados = [];
 }
+
 renderizarHistorico();
 atualizarDash();
-        
-db = {
-    ...db,              // mantém programacao
-    ...novoDB           // substitui cartoes, operadores etc
-};
-
-salvarLocal();
-// ATUALIZA A TELA
+        // ATUALIZA A TELA
         popularTodosSelects();
         renderizarHistorico();
         atualizarDash();
-restaurarEstadoRondas();
 
         console.log("✅ Dados da planilha carregados no sistema");
 
@@ -436,24 +415,7 @@ restaurarEstadoRondas();
     }
 }
 
-function limpezaForcadaTotal() {
-
-    if (!confirmarSenha()) return;
-
-    if(!confirm("⚠️ LIMPEZA TOTAL DO SISTEMA?")) return;
-
-    db.finalizados = [];
-    localStorage.clear();
-
-    renderizarHistorico();
-    atualizarDash();
-    sincronizarComPlanilha();
-
-    alert("✅ Sistema reiniciado e sincronizado.");
-}
 function limparRegistrosComErro() {
-
-    if (!confirmarSenha()) return;
 
     db.finalizados = db.finalizados.filter(r => 
         r &&
@@ -468,6 +430,8 @@ function limparRegistrosComErro() {
 
     alert("✅ Registros inválidos removidos!");
 }
+
+
     function adicionarHorario() {
         const inputPonto = document.getElementById('prog_ponto');
         const inputHora = document.getElementById('prog_hora');
@@ -492,14 +456,7 @@ function limparRegistrosComErro() {
                     <td><button onclick="removerProgramacao(${i})" style="color:var(--danger); border:1px solid var(--danger); background:none; cursor:pointer; padding:5px 10px; border-radius:4px;">Remover</button></td>
                 </tr>`).join('');
     }
-function salvarProgramacao(ponto, hora) {
-    // 1️⃣ Salva no banco local (localStorage)
-    db.programacao.push({ ponto, hora });
-    localStorage.setItem("smartcard_db", JSON.stringify(db));
 
-    // 2️⃣ Salva no servidor/planilha (API)
-    apiPost("Programacao", { ponto, hora });
-}
     function removerProgramacao(index) {
         if(confirm("Deseja remover este alarme?")) { db.programacao.splice(index, 1); salvarLocal(); renderizarProgramacao(); }
     }
@@ -534,7 +491,7 @@ function salvarProgramacao(ponto, hora) {
     }
 
    function salvarLocal() {
-    localStorage.setItem("smartcard_db", JSON.stringify(db));
+    // DESATIVADO - sistema 100% online
 }
 
 
@@ -579,7 +536,6 @@ function salvarProgramacao(ponto, hora) {
             pontos: [...pontosTemporarios]
         };
         db.cartoes.push(cartao);
-
         salvarLocal();
         popularTodosSelects();
         alert(`Cartão ${cartao.num} salvos!`);
@@ -667,29 +623,15 @@ function salvarProgramacao(ponto, hora) {
         });
     }
 
-   // Atualizar estado do veículo em tempo real
-function salvarEstadoTempoReal(vId) {
-    if (!rondaEmCurso[vId]) return;
+    function salvarEstadoTempoReal(vId) {
+        if (!rondaEmCurso[vId]) return;
+        rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
+        rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
+        rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
+        localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+    }
 
-    // Atualiza os dados do veículo
-    rondaEmCurso[vId].op = document.getElementById(`sel_op_${vId}`).value;
-    rondaEmCurso[vId].ron = document.getElementById(`sel_ron_${vId}`).value;
-    rondaEmCurso[vId].obs = document.getElementById(`obs_${vId}`).value;
-
-    // 1️⃣ Salva no localStorage
-    localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
-
-    // 2️⃣ Salva no servidor/planilha (API)
-    apiPost("RondaEmAndamento", {
-        veiculo: vId,
-        numCartao: rondaEmCurso[vId].num,
-        index: rondaEmCurso[vId].index,
-        op: rondaEmCurso[vId].op,
-        ron: rondaEmCurso[vId].ron,
-        obs: rondaEmCurso[vId].obs,
-        respostas: rondaEmCurso[vId].respostas
-    });
-}    function restaurarEstadoRondas() {
+    function restaurarEstadoRondas() {
         ['V01', 'V02', 'V03', 'A02'].forEach(vId => {
             const r = rondaEmCurso[vId];
             if (r) {
@@ -731,19 +673,20 @@ function salvarEstadoTempoReal(vId) {
     }
 
     rondaEmCurso[vId] = {
-    num: num,
-    dataInicio: new Date().toLocaleString(), // 🔥 IMPORTANTE
-    pontosOriginais: [...cartao.pontos],
-    index: 0,
-    respostas: [],
-    op: "",
-    ron: "",
-    obs: ""
-};
+        num: num,
+        pontosOriginais: [...cartao.pontos],
+        index: 0,
+        respostas: [],
+        op: "",
+        ron: "",
+        obs: ""
+    };
+
     salvarEstadoTempoReal(vId);
     atualizarInterfaceRonda(vId);
     document.getElementById(`btn_fin_${vId}`).disabled = true;
 }
+
     function registrarAcao(vId, isOk) {
         let r = rondaEmCurso[vId];
         if(!r || r.index >= 25) return;
@@ -763,7 +706,6 @@ function salvarEstadoTempoReal(vId) {
         });
 
         r.index++;
-salvarRondaEmAndamento(vId);
         salvarEstadoTempoReal(vId);
         
         if(r.index < 25) {
@@ -776,40 +718,6 @@ salvarRondaEmAndamento(vId);
         document.getElementById(`h_fim_${vId}`).value = "";
     }
 
-
-async function sincronizarRondasEmAndamento() {
-    try {
-        const res = await fetch(API_URL + "?aba=RondaEmAndamento&nocache=" + new Date().getTime());
-        const dados = await res.json();
-
-        dados.forEach(r => {
-            rondaEmCurso[r.veiculo] = {
-                num: r.numCartao,
-                index: r.index,
-                respostas: r.respostas,
-                op: r.op,
-                ron: r.ron,
-                obs: r.obs
-            };
-
-            // Atualiza a interface
-            document.getElementById(`sel_cartao_${r.veiculo}`).value = r.numCartao;
-            document.getElementById(`sel_op_${r.veiculo}`).value = r.op || "";
-            document.getElementById(`sel_ron_${r.veiculo}`).value = r.ron || "";
-            document.getElementById(`obs_${r.veiculo}`).value = r.obs || "";
-
-            if (r.index < 25) atualizarInterfaceRonda(r.veiculo);
-            else {
-                document.getElementById(`nome_ponto_${r.veiculo}`).innerText = "RONDA CONCLUÍDA";
-                document.getElementById(`bar_${r.veiculo}`).style.width = "100%";
-                document.getElementById(`btn_fin_${r.veiculo}`).disabled = false;
-            }
-        });
-    } catch (e) { console.error("Erro ao sincronizar rondas em andamento", e); }
-}
-
-// Atualiza a cada 5 segundos
-setInterval(sincronizarRondasEmAndamento, 5000);
     function atualizarInterfaceRonda(vId) {
         let r = rondaEmCurso[vId];
         document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
@@ -821,35 +729,47 @@ setInterval(sincronizarRondasEmAndamento, 5000);
         document.getElementById(`h_ini_${vId}`).innerText = agora.toLocaleTimeString('pt-BR');
     }
 
-   function finalizarRonda(vId) {
-    const r = rondaEmCurso[vId];
-    if (!r) return alert("Nenhuma ronda em curso");
+    async function finalizarRonda(vId) {
+        const r = rondaEmCurso[vId];
+        const score = ((r.respostas.filter(x => x.status === "Conforme").length / 25) * 100).toFixed(1) + "%";
+        
+        // Formatação solicitada: Prédio Peracanga: Início 21:00:23 | Final 21:01:10 | Conforme
+        const detalhesFormatados = r.respostas.map(x => 
+            `${x.ponto}: Início ${x.hIni} | Final ${x.hFim} | ${x.status}`
+        ).join(' | ');
 
-    // Salva no banco finalizado
-    db.finalizados.push({
-        veiculo: vId,
-        numCartao: r.num,
-        index: r.index,
-        op: r.op,
-        ron: r.ron,
-        obs: r.obs,
-        respostas: r.respostas,
-        status: "Concluído",
-        dataHora: new Date().toLocaleString()
-    });
+        const valores = [
+            new Date().toLocaleString(), 
+            vId, 
+            r.num, 
+            r.op, 
+            r.ron, 
+            score, 
+            detalhesFormatados
+        ];
 
-    // 1️⃣ Salva local
-    localStorage.setItem("smartcard_db", JSON.stringify(db));
+        db.finalizados.push(valores);
+        delete rondaEmCurso[vId];
+        localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
+        salvarLocal();
+        renderizarHistorico();
+        apiPost("CartoesFinalizados", valores);
+        alert("Ronda Finalizada com Sucesso!");
+        location.reload();
+    }
 
-    // 2️⃣ Salva no servidor
-    apiPost("CartoesFinalizados", db.finalizados);
+    async function apiPost(aba, valores) {
+        try {
+            await fetch(API_URL, { 
+                method: "POST", 
+                mode: "no-cors", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ aba: aba, valores: valores }) 
+            });
+            atualizarDash();
+        } catch(e) { console.error("Erro ao enviar dados para o Google Sheets"); }
+    }
 
-    // Limpa sessão da ronda
-    delete rondaEmCurso[vId];
-    localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
-
-    alert("Ronda finalizada e enviada!");
-}
    function renderizarHistorico() {
     const corpo = document.getElementById('corpoFinalizados');
     if(!corpo) return;
@@ -866,52 +786,21 @@ setInterval(sincronizarRondasEmAndamento, 5000);
             </td>
             <td style="font-size:0.8rem;">${r[6]}</td>
             <td>
-    <button onclick="gerarPDFIndividual(${index})"
-        style="background:#004a80;color:white;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;margin-bottom:4px;">
-        PDF
-    </button>
-
-    <button onclick="excluirCartaoFinalizado(${index})"
-        style="background: var(--danger); 
-               color:white; 
-               border:none; 
-               padding:6px 10px; 
-               border-radius:4px; 
-               cursor:pointer;">
-        Excluir
-    </button>
-</td>
+                <button onclick="excluirCartaoFinalizado(${index})"
+                    style="background: var(--danger); 
+                           color:white; 
+                           border:none; 
+                           padding:6px 10px; 
+                           border-radius:4px; 
+                           cursor:pointer;">
+                    Excluir
+                </button>
+            </td>
         </tr>
     `).join('');
 }
-function adicionarHorario() {
-    const inputPonto = document.getElementById('prog_ponto');
-    const inputHora = document.getElementById('prog_hora');
-    const ponto = inputPonto.value.trim();
-    const hora = inputHora.value;
-    if(!ponto || !hora) { alert("⚠️ Preencha os campos!"); return; }
 
-    const novo = { ponto: ponto, hora: hora };
-    db.programacao.push(novo);
-    db.programacao.sort((a,b) => a.hora.localeCompare(b.hora));
-    salvarLocal(); 
-    renderizarProgramacao();
-    inputPonto.value = ""; inputHora.value = "";
-
-    // 🔥 salva imediatamente no servidor
-    apiPost("Programacao", novo);
-}
-    function limparHistorico() {
-
-    if (!confirmarSenha()) return;
-
-    if(confirm("Limpar dados locais?")) {
-        db.finalizados = [];
-        salvarLocal();
-        renderizarHistorico();
-        atualizarDash();
-    }
-}
+    function limparHistorico() { if(confirm("Limpar dados locais?")) { db.finalizados = []; salvarLocal(); renderizarHistorico(); atualizarDash(); } }
 
     function exportarExcel() {
         const ws = XLSX.utils.aoa_to_sheet([["Data", "Veículo", "Cartão", "Operador", "Rondante", "Score", "Detalhes"], ...db.finalizados]);
@@ -921,14 +810,7 @@ function adicionarHorario() {
     }
 
     function gerarRelatorioPDF() {
-
-    // 🔒 PERMITIR PDF VAZIO
-    if (!db.finalizados || db.finalizados.length === 0) {
-        alert("Não há cartões finalizados para gerar o PDF.");
-        return;
-    }
-
-    const doc = new jspdf.jsPDF('l', 'mm', 'a4');
+        const doc = new jspdf.jsPDF('l', 'mm', 'a4');
         doc.text("RELATÓRIO DE RONDAS - SAMARCO", 14, 15);
         doc.autoTable({ 
             startY: 20, 
@@ -938,62 +820,6 @@ function adicionarHorario() {
         });
         doc.save("Relatorio_Rondas.pdf");
     }
-
-
-function gerarPDFIndividual(index) {
-
-    const r = db.finalizados[index];
-
-    const doc = new jspdf.jsPDF('p', 'mm', 'a4');
-
-    // Cabeçalho
-    doc.setFillColor(0, 74, 128);
-    doc.rect(0, 0, 210, 20, 'F');
-
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(14);
-    doc.text("SMART CARD - RELATÓRIO DE RONDA", 105, 12, {align: "center"});
-
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(11);
-
-    let y = 30;
-
-    doc.text(`Data/Hora: ${r[0]}`, 15, y);
-    y += 8;
-    doc.text(`Veículo: ${r[1]}`, 15, y);
-    y += 8;
-    doc.text(`Cartão: ${r[2]}`, 15, y);
-    y += 8;
-    doc.text(`Operador: ${r[3]}`, 15, y);
-    y += 8;
-    doc.text(`Rondante: ${r[4]}`, 15, y);
-    y += 8;
-
-    doc.setFontSize(13);
-    doc.setTextColor(242, 145, 0);
-    doc.text(`Score Final: ${r[5]}`, 15, y);
-    y += 12;
-
-    doc.setTextColor(0,0,0);
-    doc.setFontSize(10);
-
-    doc.text("Detalhamento dos Pontos:", 15, y);
-    y += 6;
-
-    doc.autoTable({
-        startY: y,
-        head: [["Detalhes"]],
-        body: [[r[6]]],
-        styles: {
-            fontSize: 8,
-            cellWidth: 180
-        }
-    });
-
-    doc.save(`Ronda_${r[2]}_${r[0].replace(/[/:]/g,'-')}.pdf`);
-}
-
 
     function atualizarDash() {
         const finalizados = db.finalizados || [];
@@ -1014,8 +840,6 @@ function gerarPDFIndividual(index) {
 
 async function excluirCartaoFinalizado(index) {
 
-    if (!confirmarSenha()) return;
-
     if(!confirm("⚠️ Deseja excluir definitivamente da planilha?")) return;
 
     const registro = db.finalizados[index];
@@ -1034,270 +858,30 @@ async function excluirCartaoFinalizado(index) {
         db.finalizados.splice(index, 1);
         renderizarHistorico();
         atualizarDash();
+
         alert("✅ Cartão excluído definitivamente da planilha!");
-        sincronizarComPlanilha();
 
     } catch (erro) {
         alert("❌ Erro ao excluir da planilha.");
         console.error(erro);
     }
+
+function limparRegistrosComErro() {
+
+    db.finalizados = db.finalizados.filter(r => 
+        r &&
+        r.length >= 7 &&
+        r[0] &&
+        r[2] &&
+        r[5]
+    );
+
+    renderizarHistorico();
+    atualizarDash();
+
+    alert("✅ Registros inválidos removidos!");
 }
-
-function filtrarTabela(coluna, valor) {
-
-    const filtro = valor.toUpperCase();
-    const linhas = document.querySelectorAll("#tabelaFinalizados tbody tr");
-
-    linhas.forEach(linha => {
-        const celula = linha.children[coluna];
-        if (!celula) return;
-
-        const texto = celula.textContent || celula.innerText;
-
-        linha.style.display =
-            texto.toUpperCase().indexOf(filtro) > -1
-            ? ""
-            : "none";
-    });
-}
-
-async function salvarRondaEmAndamento(vId) {
-
-    const r = rondaEmCurso[vId];
-    if (!r) return;
-
-    const valores = [
-        r.dataInicio,
-        vId,
-        r.num,
-        r.index,
-        r.op || "",
-        r.ron || "",
-        JSON.stringify(r.respostas)
-    ];
-
-    try {
-        await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                acao: "salvarOuAtualizar",
-                valores: JSON.stringify(valores)
-            })
-        });
-
-    } catch (erro) {
-        console.error("Erro ao salvar ronda em andamento", erro);
-    }
-}
-
-async function removerRondaEmAndamento(vId) {
-
-    const r = rondaEmCurso[vId];
-    if (!r) return;
-
-    try {
-        await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                acao: "remover",
-                cartao: r.num   // 🔥 agora envia o cartão correto
-            })
-        });
-
-    } catch (erro) {
-        console.error("Erro ao remover ronda em andamento", erro);
-    }
-}
-
-let dbProgramacao = JSON.parse(localStorage.getItem('programacao') || '[]');
-
-function renderizarProgramacao() {
-    const ul = document.getElementById('listaProgramacao');
-    ul.innerHTML = '';
-    dbProgramacao.forEach((item, index) => {
-        ul.innerHTML += `<li>
-            <input id="prog_ponto_${index}" value="${item.ponto}" onchange="editarProgramacao(${index})">
-            <input type="time" id="prog_hora_${index}" value="${item.hora}" onchange="editarProgramacao(${index})">
-            <button onclick="removerProgramacao(${index})">X</button>
-        </li>`;
-    });
-}
-
-function salvarProgramacao() {
-    localStorage.setItem('programacao', JSON.stringify(dbProgramacao));
-}
-
-function apiProgramacao(dado) {
-    apiPost('Programacao', dado);
-}
-
-function adicionarHorario() {
-    const ponto = document.getElementById('prog_ponto').value.trim();
-    const hora = document.getElementById('prog_hora').value;
-    if(!ponto || !hora) return alert("Preencha ponto e hora!");
-
-    const novo = { ponto, hora };
-    dbProgramacao.push(novo);
-    salvarProgramacao();
-    apiProgramacao(novo);
-    renderizarProgramacao();
-
-    document.getElementById('prog_ponto').value = '';
-    document.getElementById('prog_hora').value = '';
-}
-
-function editarProgramacao(index) {
-    const ponto = document.getElementById(`prog_ponto_${index}`).value;
-    const hora = document.getElementById(`prog_hora_${index}`).value;
-    dbProgramacao[index] = { ponto, hora };
-    salvarProgramacao();
-    apiProgramacao(dbProgramacao[index]);
-}
-
-function removerProgramacao(index) {
-    dbProgramacao.splice(index, 1);
-    salvarProgramacao();
-    renderizarProgramacao();
-}
-
-// Inicializa lista ao carregar a página
-document.addEventListener('DOMContentLoaded', renderizarProgramacao);
-// Lista dos veículos
-const veiculos = ['victor01','victor02','victor03','alfa02'];
-
-// Função para salvar os dados automaticamente
-function salvarEstadoTempoReal(vId) {
-    const estado = {
-        veiculo: vId,
-        numCartao: document.getElementById(`sel_cartao_${vId}`).value,
-        op: document.getElementById(`sel_op_${vId}`).value,
-        ron: document.getElementById(`sel_ron_${vId}`).value,
-        obs: document.getElementById(`obs_${vId}`).value,
-        horaFim: document.getElementById(`h_fim_${vId}`).value,
-        desvio: document.getElementById(`sel_loc_ponto_${vId}`).value,
-        status: 'em andamento'
-    };
-
-    // 🔹 Salva localmente no navegador
-    localStorage.setItem(`ronda_${vId}`, JSON.stringify(estado));
-
-    // 🔹 Salva na API / banco de dados
-    apiPost('RondaEmAndamento', estado);
-}
-
-// Adiciona eventos 'change' e 'blur' para todos os campos
-function ativarAutoSaveCampos() {
-    veiculos.forEach(vId => {
-        const campos = [
-            `sel_cartao_${vId}`,
-            `sel_op_${vId}`,
-            `sel_ron_${vId}`,
-            `obs_${vId}`,
-            `h_fim_${vId}`,
-            `sel_loc_ponto_${vId}`
-        ];
-        campos.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) {
-                el.addEventListener('change', () => salvarEstadoTempoReal(vId));
-                el.addEventListener('blur', () => salvarEstadoTempoReal(vId));
-            }
-        });
-    });
-}
-
-// Inicializa auto-save ao carregar a página
-document.addEventListener('DOMContentLoaded', ativarAutoSaveCampos);
-
-// Função simulada para enviar dados para API
-function apiPost(endpoint, dados) {
-    console.log(`Enviando para ${endpoint}:`, dados);
-    // Aqui você implementa fetch/ajax real para o seu backend
-}
-
-function finalizarRonda(vId) {
-    const estado = {
-        veiculo: vId,
-        numCartao: document.getElementById(`sel_cartao_${vId}`).value,
-        op: document.getElementById(`sel_op_${vId}`).value,
-        ron: document.getElementById(`sel_ron_${vId}`).value,
-        obs: document.getElementById(`obs_${vId}`).value,
-        horaFim: document.getElementById(`h_fim_${vId}`).value,
-        desvio: document.getElementById(`sel_loc_ponto_${vId}`).value,
-        status: 'Concluído',
-        dataFim: new Date().toLocaleString()
-    };
-
-    // 🔹 Salva localmente como finalizado
-    localStorage.setItem(`ronda_${vId}_finalizada`, JSON.stringify(estado));
-
-    // 🔹 Salva na API / banco remoto
-    apiPost('CartoesFinalizados', estado);
-
-    // Desabilita botão
-    document.getElementById(`btn_fin_${vId}`).disabled = true;
-
-    alert(`Ronda do ${vId} finalizada!`);
-}
-// Lista dos veículos
-const veiculos = ['victor01','victor02','victor03','alfa02'];
-
-// Função para salvar os dados automaticamente
-function salvarEstadoTempoReal(vId) {
-    const estado = {
-        veiculo: vId,
-        numCartao: document.getElementById(`sel_cartao_${vId}`).value,
-        op: document.getElementById(`sel_op_${vId}`).value,
-        ron: document.getElementById(`sel_ron_${vId}`).value,
-        obs: document.getElementById(`obs_${vId}`).value,
-        horaFim: document.getElementById(`h_fim_${vId}`).value,
-        desvio: document.getElementById(`sel_loc_ponto_${vId}`).value,
-        status: 'em andamento'
-    };
-
-    // 🔹 Salva localmente no navegador
-    localStorage.setItem(`ronda_${vId}`, JSON.stringify(estado));
-
-    // 🔹 Salva na API / banco de dados
-    apiPost('RondaEmAndamento', estado);
-}
-
-// Adiciona eventos 'change' e 'blur' para todos os campos
-function ativarAutoSaveCampos() {
-    veiculos.forEach(vId => {
-        const campos = [
-            `sel_cartao_${vId}`,
-            `sel_op_${vId}`,
-            `sel_ron_${vId}`,
-            `obs_${vId}`,
-            `h_fim_${vId}`,
-            `sel_loc_ponto_${vId}`
-        ];
-        campos.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) {
-                el.addEventListener('change', () => salvarEstadoTempoReal(vId));
-                el.addEventListener('blur', () => salvarEstadoTempoReal(vId));
-            }
-        });
-    });
-}
-
-// Inicializa auto-save ao carregar a página
-document.addEventListener('DOMContentLoaded', ativarAutoSaveCampos);
-
-// Função simulada para enviar dados para API
-function apiPost(endpoint, dados) {
-    console.log(`Enviando para ${endpoint}:`, dados);
-    // Aqui você implementa fetch/ajax real para o seu backend
-
-}
-
-
-
-<script>
+}</script>
 
 </body>
 </html>
