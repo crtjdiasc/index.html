@@ -654,20 +654,20 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
         ordenarListas();
         veicIds.forEach((id, idx) => {
             const sCartao = document.getElementById(`sel_cartao_${id}`);
-            const sOp = document.getElementById(sel_op_${id});
-            const sRon = document.getElementById(sel_ron_${id});
-            const sLocPonto = document.getElementById(sel_loc_ponto_${id});
+            const sOp = document.getElementById(`sel_op_${id}`);
+            const sRon = document.getElementById(`sel_ron_${id}`);
+const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
             if(!sCartao) return;
-const sMotivo = document.getElementById(sel_motivo_${id});
+const sMotivo = document.getElementById(`sel_motivo_${id}`);
 
 if(sMotivo){
-const sSup = document.getElementById(sel_sup_${id});
-const sPlaca = document.getElementById(sel_placa_${id});
+const sSup = document.getElementById(`sel_sup_${id}`);
+const sPlaca = document.getElementById(`sel_placa_${id}`);
 
 if(sSup){
 sSup.innerHTML =
 '<option value="">---</option>' +
-db.supervisores.map(o => <option value="${o}">${o}</option>).join('');
+db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
 }
 
 if(sPlaca){
@@ -773,7 +773,7 @@ let pontoAnterior = r.index > 0 ? r.pontosOriginais[r.index - 1] : "---";
 document.getElementById(`ponto_anterior_${vId}`).innerText =
 `PONTO ANTERIOR: ${pontoAnterior}`;
         document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
-        document.getElementById(cont_ponto_${vId}).innerText = PONTO ${r.index + 1} / 25;
+        document.getElementById(`cont_ponto_${vId}`).innerText = `PONTO ${r.index + 1} / 25`;
 if(r.respostas && r.respostas.length > 0){
 
 let historico = montarHistoricoPontos(r.respostas);
@@ -810,9 +810,8 @@ document.getElementById(ponto_anterior_${vId}).innerHTML =
     
     // INCLUINDO O DESVIO NA STRING DE DETALHES
     const detalhesFormatados = r.respostas.map(x => 
-       ${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Motivo: ${x.motivo} | Desvio: ${x.desvio}
-    ).join(' || ');
-
+`${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Motivo: ${x.motivo} | Desvio: ${x.desvio}`
+).join(" || ");
     const valores = [
 new Date().toLocaleString(),
 vId,
@@ -1186,7 +1185,7 @@ let icone = ultimo ? "🔴" : "✔";
 
 let atual = ultimo ? " (ATUAL)" : "";
 
-html+=
+html += `
 <div style="
 padding:4px;
 color:${ultimo ? "red":"white"};
