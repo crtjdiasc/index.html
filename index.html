@@ -349,16 +349,25 @@ setInterval(sincronizarComPlanilha, 30000);
   async function sincronizarComPlanilha() {
     try {
         const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
-        const data = await response.json();
+        let data = {};
+try {
+    data = await response.json();
+} catch(e) {
+    console.error("Erro ao converter JSON:", e);
+    return;
+}
 
         // Limpa tudo antes de recriar
         const novoDB = {
     cartoes: [],
     operadores: [],
     rondantes: [],
+    supervisores: [],
+    placas: [],
     locais: [],
+    motivos: [],
     finalizados: [],
-    programacao: [...db.programacao] // CLONA a programação local
+    programacao: [...db.programacao]
 };
 
         // ==========================
