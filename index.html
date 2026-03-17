@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART CARD CECOPSV2026/01 – SAMARCO</title>
-    
+   
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -69,11 +69,11 @@
             border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;
         }
 
-        .search-input { 
-            margin-bottom: 2px; 
-            padding: 8px; 
-            font-size: 0.85rem; 
-            border-bottom: none; 
+        .search-input {
+            margin-bottom: 2px;
+            padding: 8px;
+            font-size: 0.85rem;
+            border-bottom: none;
             border-radius: 6px 6px 0 0;
             background: #fff9f0;
         }
@@ -84,13 +84,13 @@
         }
         .btn-main:disabled { background: #ccc; cursor: not-allowed; }
 
-        #listaPontosPreview { 
-            background: #f9f9f9; padding: 10px; border: 1px dashed var(--samarco-blue); 
+        #listaPontosPreview {
+            background: #f9f9f9; padding: 10px; border: 1px dashed var(--samarco-blue);
             max-height: 150px; overflow-y: auto; margin-bottom: 10px; font-size: 0.9rem;
         }
 
         .ponto-box {
-            background: var(--dark); color: white; padding: 30px; 
+            background: var(--dark); color: white; padding: 30px;
             border-radius: 12px; text-align: center; margin-bottom: 20px;
         }
         .progress-container { background: #444; height: 25px; border-radius: 12px; overflow: hidden; margin: 15px 0; }
@@ -229,7 +229,7 @@
                 <button onclick="exportarExcel()" style="background: #1d6f42; color:white; border:none; padding:10px; cursor:pointer; border-radius:4px;">Exportar Excel (XLSX)</button>
                 <button onclick="gerarRelatorioPDF()" style="background: #e74c3c; color:white; border:none; padding:10px; cursor:pointer; border-radius:4px;">Gerar PDF Auditoria</button>
                 <button onclick="limparHistorico()" style="background: #555; color:white; border:none; padding:10px; cursor:pointer; border-radius:4px;">Limpar Local</button>
-<button onclick="limparRegistrosComErro()" 
+<button onclick="limparRegistrosComErro()"
     style="background:#f39c12; color:white; border:none; padding:10px; border-radius:4px;">
     Limpar Dados com Erro
 </button>
@@ -335,27 +335,36 @@ restaurarBancoLocal();
         popularTodosSelects();
         restaurarEstadoRondas();
 
-          
+         
  renderizarProgramacao();
         renderizarHistorico();
         setInterval(verificarAlarmes, 10000);
         atualizarDash();
+        setInterval(() => {
+    if(Object.keys(rondaEmCurso).length === 0){
         sincronizarComPlanilha();
-setInterval(sincronizarComPlanilha, 30000);
+    }
+}, 30000);
 
 
     });
 
   async function sincronizarComPlanilha() {
+
+    if(
+        document.activeElement.tagName === "INPUT" ||
+        document.activeElement.tagName === "SELECT" ||
+        document.activeElement.tagName === "TEXTAREA"
+    ){
+        return;
+    }
+
+    if(Object.keys(rondaEmCurso).length > 0){
+        return;
+    }
+
     try {
         const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
-        let data = {};
-try {
-    data = await response.json();
-} catch(e) {
-    console.error("Erro ao converter JSON:", e);
-    return;
-}
 
         // Limpa tudo antes de recriar
         const novoDB = {
@@ -442,7 +451,7 @@ if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
 }
 renderizarHistorico();
 atualizarDash();
-        
+       
 db.cartoes = novoDB.cartoes;
 db.operadores = novoDB.operadores;
 db.rondantes = novoDB.rondantes;
@@ -481,7 +490,7 @@ function limparRegistrosComErro() {
 
     if (!confirmarSenha()) return;
 
-    db.finalizados = db.finalizados.filter(r => 
+    db.finalizados = db.finalizados.filter(r =>
         r &&
         r.length >= 7 &&
         r[0] &&
@@ -494,7 +503,7 @@ function limparRegistrosComErro() {
 
     alert("✅ Registros inválidos removidos!");
 }
-    
+   
    
     function removerProgramacao(index) {
         if(confirm("Deseja remover este alarme?")) { db.programacao.splice(index, 1); salvarLocal(); renderizarProgramacao(); }
@@ -627,7 +636,7 @@ else db.locais.push(nome);
                         <input type="text" placeholder="🔍 Pesquisar rondante..." class="search-input" id="search_ron_${v.id}" onkeyup="filtrarSelect('search_ron_${v.id}', 'sel_ron_${v.id}')">
                         <select id="sel_ron_${v.id}" onchange="salvarEstadoTempoReal('${v.id}')"></select>
                         <label>Placa do Veículo</label>
-<input type="text" placeholder="🔍 Pesquisar placa..." 
+<input type="text" placeholder="🔍 Pesquisar placa..."
 class="search-input"
 id="search_placa_${v.id}"
 onkeyup="filtrarSelect('search_placa_${v.id}', 'sel_placa_${v.id}')">
@@ -635,7 +644,7 @@ onkeyup="filtrarSelect('search_placa_${v.id}', 'sel_placa_${v.id}')">
 <select id="sel_placa_${v.id}" onchange="salvarEstadoTempoReal('${v.id}')"></select>
 
 <label>Supervisor</label>
-<input type="text" placeholder="🔍 Pesquisar supervisor..." 
+<input type="text" placeholder="🔍 Pesquisar supervisor..."
 class="search-input"
 id="search_sup_${v.id}"
 onkeyup="filtrarSelect('search_sup_${v.id}', 'sel_sup_${v.id}')">
@@ -649,7 +658,7 @@ onkeyup="filtrarSelect('search_sup_${v.id}', 'sel_sup_${v.id}')">
                         <div class="ponto-box">
                             <h4 id="nome_ponto_${v.id}">AGUARDANDO SELEÇÃO</h4>
 
-<div id="ponto_anterior_${v.id}" 
+<div id="ponto_anterior_${v.id}"
 style="color:red; font-weight:bold; margin-bottom:5px;">
 PONTO ANTERIOR: ---
 </div>
@@ -749,7 +758,7 @@ salvarLocal();
             document.getElementById(`sel_op_${vId}`).value = r.op || "";
             document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
             document.getElementById(`obs_${vId}`).value = r.obs || "";
-            
+           
             // Sincronizar pontos já lançados
            
             if (r.index < 25) atualizarInterfaceRonda(vId);
@@ -776,7 +785,7 @@ salvarLocal();
 
     const nomeVeiculo = veiculosMap[vId];
 
-    const cartao = db.cartoes.find(c => 
+    const cartao = db.cartoes.find(c =>
         c.num === num && c.veiculo === nomeVeiculo
     );
 
@@ -799,7 +808,7 @@ salvarLocal();
     atualizarInterfaceRonda(vId);
     document.getElementById(`btn_fin_${vId}`).disabled = true;
 }
-    
+   
     function atualizarInterfaceRonda(vId) {
         let r = rondaEmCurso[vId];
 
@@ -810,7 +819,7 @@ document.getElementById(`ponto_anterior_${vId}`).innerText =
         document.getElementById(`nome_ponto_${vId}`).innerText = `PONTO: ${r.pontosOriginais[r.index]}`;
         document.getElementById(`cont_ponto_${vId}`).innerText = `PONTO ${r.index + 1} / 25`;
         document.getElementById(`bar_${vId}`).style.width = (r.index / 25 * 100) + "%";
-        
+       
         // Captura o horário de início do ponto no momento que ele aparece
         const agora = new Date();
         document.getElementById(`h_ini_${vId}`).innerText = agora.toLocaleTimeString('pt-BR');
@@ -819,9 +828,9 @@ document.getElementById(`ponto_anterior_${vId}`).innerText =
    async function finalizarRonda(vId) {
     const r = rondaEmCurso[vId];
     const score = ((r.respostas.filter(x => x.status === "Conforme").length / 25) * 100).toFixed(1) + "%";
-    
+   
     // INCLUINDO O DESVIO NA STRING DE DETALHES
-    const detalhesFormatados = r.respostas.map(x => 
+    const detalhesFormatados = r.respostas.map(x =>
         `${x.ponto}: [${x.hIni}-${x.hFim}] | ${x.status} | Desvio: ${x.desvio}`
     ).join(' || ');
 
@@ -839,12 +848,12 @@ detalhesFormatados
 
     db.finalizados.push(valores);
     salvarLocal();
-    
+   
     delete rondaEmCurso[vId];
     localStorage.setItem('ronda_em_curso', JSON.stringify(rondaEmCurso));
    
     renderizarHistorico();
-    
+   
     // Tenta enviar para o Google Sheets
     apiPost("CartoesFinalizados", valores);
 
@@ -854,11 +863,11 @@ detalhesFormatados
 
     async function apiPost(aba, valores) {
         try {
-            await fetch(API_URL, { 
-                method: "POST", 
-                mode: "no-cors", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ aba: aba, valores: valores }) 
+            await fetch(API_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ aba: aba, valores: valores })
             });
             atualizarDash();
         } catch(e) { console.error("Erro ao enviar dados para o Google Sheets"); }
@@ -886,11 +895,11 @@ detalhesFormatados
     </button>
 
     <button onclick="excluirCartaoFinalizado(${index})"
-        style="background: var(--danger); 
-               color:white; 
-               border:none; 
-               padding:6px 10px; 
-               border-radius:4px; 
+        style="background: var(--danger);
+               color:white;
+               border:none;
+               padding:6px 10px;
+               border-radius:4px;
                cursor:pointer;">
         Excluir
     </button>
@@ -928,9 +937,9 @@ detalhesFormatados
 
     const doc = new jspdf.jsPDF('l', 'mm', 'a4');
         doc.text("RELATÓRIO DE RONDAS - SAMARCO", 14, 15);
-        doc.autoTable({ 
-            startY: 20, 
-            head: [["Data", "Veículo", "Cartão", "Operador", "Rondante", "Score", "Detalhes"]], 
+        doc.autoTable({
+            startY: 20,
+            head: [["Data", "Veículo", "Cartão", "Operador", "Rondante", "Score", "Detalhes"]],
             body: db.finalizados.map(r => [r[0], r[1], r[2], r[3], r[4], r[5], r[6]]),
             styles: { fontSize: 7 }
         });
@@ -1002,7 +1011,7 @@ function gerarPDFIndividual(index) {
             const somaScore = finalizados.reduce((acc, curr) => acc + (parseFloat(curr[5]) || 0), 0);
             const media = (somaScore / total).toFixed(1);
             document.getElementById('d_conf').innerText = media + "%";
-            
+           
             const ocorrencias = finalizados.filter(r => parseFloat(r[5]) < 100).length;
             document.getElementById('d_ocor').innerText = ocorrencias;
         }
@@ -1116,7 +1125,7 @@ async function salvarNaPlanilha(aba, valores) {
 function registrarAcao(vId, isOk) {
     let r = rondaEmCurso[vId];
     if(!r || r.index >= 25) return;
-    
+   
     const hFim = document.getElementById(`h_fim_${vId}`).value;
     if(!hFim) { alert("⚠️ Por favor, registre a HORA FINAL do ponto."); return; }
 
@@ -1124,12 +1133,12 @@ function registrarAcao(vId, isOk) {
 const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo";
     const hIni = document.getElementById(`h_ini_${vId}`).innerText;
 
-    const respostaAtual = { 
-        ponto: r.pontosOriginais[r.index], 
-        status: isOk ? "Conforme" : "Não Conforme", 
-        desvio: desvio, 
-        hIni: hIni, 
-        hFim: hFim 
+    const respostaAtual = {
+        ponto: r.pontosOriginais[r.index],
+        status: isOk ? "Conforme" : "Não Conforme",
+        desvio: desvio,
+        hIni: hIni,
+        hFim: hFim
     };
 
     r.respostas.push(respostaAtual);
@@ -1200,9 +1209,9 @@ function adicionarHorario() {
     const ponto = inputPonto.value.trim();
     const hora = inputHora.value;
 
-    if(!ponto || !hora) { 
-        alert("⚠️ Preencha os campos!"); 
-        return; 
+    if(!ponto || !hora) {
+        alert("⚠️ Preencha os campos!");
+        return;
     }
 
     const registro = { ponto, hora, obs: "" };
@@ -1228,14 +1237,14 @@ function renderizarProgramacao() {
     const corpo = document.getElementById('corpoProgramacao');
     if(!corpo) return;
 
-    corpo.innerHTML = db.programacao.length === 0 
-        ? '<tr><td colspan="3" style="text-align:center;">Nenhum horário agendado</td></tr>' 
+    corpo.innerHTML = db.programacao.length === 0
+        ? '<tr><td colspan="3" style="text-align:center;">Nenhum horário agendado</td></tr>'
         : db.programacao.map((p, i) => `
             <tr>
                 <td style="font-weight:bold; color:var(--samarco-blue);">${p.hora}</td>
                 <td>${p.ponto}</td>
                 <td>
-                    <button onclick="removerProgramacao(${i})" 
+                    <button onclick="removerProgramacao(${i})"
                         style="color:var(--danger); border:1px solid var(--danger); background:none; cursor:pointer; padding:5px 10px; border-radius:4px;">
                         Remover
                     </button>
@@ -1249,3 +1258,4 @@ function renderizarProgramacao() {
 
 </body>
 </html>
+
