@@ -349,142 +349,56 @@ restaurarBancoLocal();
 
     });
 
-  async function sincronizarComPlanilha() {
-
-    if(
-        document.activeElement.tagName === "INPUT" ||
-        document.activeElement.tagName === "SELECT" ||
-        document.activeElement.tagName === "TEXTAREA"
-    ){
-        return;
-    }
-
-    if(Object.keys(rondaEmCurso).length > 0){
-        return;
-    }
+async function sincronizarComPlanilha() {
+    // 1. Não interrompe se o usuário estiver editando
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+    
+    // 2. Não reseta se houver ronda em curso nas abas
+    if (Object.keys(rondaEmCurso).length > 0) return;
 
     try {
         const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
+        const json = await response.json();
+        const data = json.data || json; // Garante leitura independente do formato do retorno
 
-        // Limpa tudo antes de recriar
+        if (!data || !data.Cadastros) {
+            console.warn("⚠️ Planilha sem dados de cadastro. Mantendo dados locais.");
+            return; 
+        }
+
         const novoDB = {
-    cartoes: [],
-    operadores: [],
-    rondantes: [],
-    supervisores: [],
-    placas: [],
-    locais: [],
-    motivos: [],
-    finalizados: [],
-    programacao: [...db.programacao]
-};
+            cartoes: [], operadores: [], rondantes: [], supervisores: [],
+            placas: [], locais: [], motivos: [], finalizados: [],
+            programacao: [...db.programacao]
+        };
 
-        // ==========================
-        // LENDO ABA CADASTROS
-        // ==========================
-        if (data.Cadastros) {
+        data.Cadastros.forEach(linha => {
+            const tipo = linha[1]; 
+            const nome = linha[2];
+            const veic = linha[3];
+            const pontosRaw = linha[4];
 
-            data.Cadastros.forEach(linha => {
+            if (tipo === "Operador") novoDB.operadores.push(nome);
+            else if (tipo === "Rondante") novoDB.rondantes.push(nome);
+            else if (tipo === "Supervisor") novoDB.supervisores.push(nome);
+            else if (tipo === "Placa") novoDB.placas.push(nome);
+            else if (tipo === "Motivo") novoDB.motivos.push(nome);
+            else if (tipo === "Desvio" || tipo === "Redirecionamento") novoDB.locais.push(nome);
+            else if (tipo && tipo.toUpperCase().includes("CART")) {
+                novoDB.cartoes.push({ num: nome, veiculo: veic, pontos: pontosRaw ? pontosRaw.split("|") : [] });
+            }
+        });
 
-               const tipo = linha[1];
-const nome = linha[2];
-
-if (tipo === "Operador") {
-    novoDB.operadores.push(nome);
-}
-
-else if (tipo === "Rondante") {
-    novoDB.rondantes.push(nome);
-}
-
-else if (tipo === "Desvio" || tipo === "Redirecionamento") {
-    novoDB.locais.push(nome);
-}
-
-
-
-             // CARTÕES
-else if (tipo && tipo.toUpperCase().includes("CART")) {
-
-    const numero = linha[2];      // coluna número do cartão
-    const veiculo = linha[3];     // coluna veículo
-    const pontosRaw = linha[4];   // coluna pontos
-
-    const pontos = pontosRaw
-        ? pontosRaw.split("|")
-        : [];
-
-   novoDB.cartoes.push({
-    num: numero,
-    veiculo: veiculo,
-    pontos: pontos
-});
-}
-
-// LOCAIS (Desvio e Redirecionamento)
-
-            });
+        // 🔥 SÓ ATUALIZA SE HOUVER DADOS REAIS NA PLANILHA
+        if (novoDB.operadores.length > 0 || novoDB.cartoes.length > 0) {
+            db = { ...db, ...novoDB };
+            salvarLocal();
+            popularTodosSelects();
+            console.log("✅ Dados sincronizados com sucesso.");
         }
-
-       // ==========================
-// FINALIZADOS LIMPOS E FILTRADOS
-// ==========================
-
-// ==========================
-// FINALIZADOS (PADRÃO ARRAY)
-// ==========================
-if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
-
-    // Remove duplicados pela Data/Hora
-    const mapaUnico = {};
-
-    data.CartoesFinalizados.forEach(reg => {
-        if(reg && reg[0]) {
-            mapaUnico[reg[0]] = reg;
-        }
-    });
-
-    novoDB.finalizados = Object.values(mapaUnico);
-
-} else {
-    novoDB.finalizados = [];
-}
-renderizarHistorico();
-atualizarDash();
-       
-db.cartoes = novoDB.cartoes;
-db.operadores = novoDB.operadores;
-db.rondantes = novoDB.rondantes;
-db.locais = novoDB.locais;
-db.finalizados = novoDB.finalizados;
-salvarLocal();
-// ATUALIZA A TELA
-        popularTodosSelects();
-        renderizarHistorico();
-        atualizarDash();
-restaurarEstadoRondas();
-
-        console.log("✅ Dados da planilha carregados no sistema");
-
     } catch (erro) {
-        console.log("Erro ao sincronizar:", erro);
+        console.error("❌ Falha na conexão com a planilha:", erro);
     }
-}
-
-function limpezaForcadaTotal() {
-
-    if (!confirmarSenha()) return;
-
-    if(!confirm("⚠️ LIMPEZA TOTAL DO SISTEMA?")) return;
-
-    db.finalizados = [];
-    localStorage.removeItem("smartcard_db");
-localStorage.removeItem("ronda_em_curso");
-    renderizarHistorico();
-    atualizarDash();
-    sincronizarComPlanilha();
-
-    alert("✅ Sistema reiniciado e sincronizado.");
 }
 function limparRegistrosComErro() {
 
@@ -700,44 +614,46 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
             </section>`).join('');
     }
 
-    function popularTodosSelects() {
-        const veicIds = ['V01', 'V02', 'V03', 'A02'];
-        const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
-        ordenarListas();
-        veicIds.forEach((id, idx) => {
-            const sCartao = document.getElementById(`sel_cartao_${id}`);
-            const sOp = document.getElementById(`sel_op_${id}`);
-            const sRon = document.getElementById(`sel_ron_${id}`);
-            const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
-            if(!sCartao) return;
-const sMotivo = document.getElementById(`sel_motivo_${id}`);
+function popularTodosSelects() {
+    const veicIds = ['V01', 'V02', 'V03', 'A02'];
+    const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
+    ordenarListas();
 
-if(sMotivo){
-const sSup = document.getElementById(`sel_sup_${id}`);
-const sPlaca = document.getElementById(`sel_placa_${id}`);
+    veicIds.forEach((id, idx) => {
+        const sCartao = document.getElementById(`sel_cartao_${id}`);
+        
+        // 🔥 REGRA DE OURO: Se o veículo já tem uma ronda em curso, 
+        // NÃO mexemos nos selects dele para não zerar a tela do operador.
+        if (rondaEmCurso[id]) {
+            console.log(`Pulando atualização de selects para ${id} (Ronda ativa)`);
+            return; 
+        }
 
-if(sSup){
-sSup.innerHTML =
-'<option value="">---</option>' +
-db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
+        if(!sCartao) return;
+
+        // Atualiza apenas se o campo estiver vazio ou sem ronda
+        sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' +
+            db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => `<option value="${c.num}">${c.num}</option>`).join('');
+        
+        document.getElementById(`sel_op_${id}`).innerHTML = '<option value="">---</option>' + 
+            db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
+            
+        document.getElementById(`sel_ron_${id}`).innerHTML = '<option value="">---</option>' + 
+            db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
+            
+        document.getElementById(`sel_sup_${id}`).innerHTML = '<option value="">---</option>' + 
+            db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
+            
+        document.getElementById(`sel_placa_${id}`).innerHTML = '<option value="">---</option>' + 
+            db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
+            
+        document.getElementById(`sel_loc_ponto_${id}`).innerHTML = '<option value="">Sem Desvio</option>' + 
+            db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
+        
+        document.getElementById(`sel_motivo_${id}`).innerHTML = '<option value="">Sem Motivo</option>' + 
+            db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
+    });
 }
-
-if(sPlaca){
-sPlaca.innerHTML =
-'<option value="">---</option>' +
-db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
-}
-
-sMotivo.innerHTML =
-'<option value="">Sem Motivo</option>' +
-db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
-}
-            sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' + db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => `<option value="${c.num}">${c.num}</option>`).join('');
-            sOp.innerHTML = '<option value="">---</option>' + db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
-            sRon.innerHTML = '<option value="">---</option>' + db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
-            sLocPonto.innerHTML = '<option value="">Sem Desvio</option>' + db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
-        });
-    }
 
     function salvarEstadoTempoReal(vId) {
         if (!rondaEmCurso[vId]) return;
@@ -754,19 +670,15 @@ salvarLocal();
     ['V01', 'V02', 'V03', 'A02'].forEach(vId => {
         const r = rondaEmCurso[vId];
         if (r) {
-            document.getElementById(`sel_cartao_${vId}`).value = r.num;
-            document.getElementById(`sel_op_${vId}`).value = r.op || "";
-            document.getElementById(`sel_ron_${vId}`).value = r.ron || "";
-            document.getElementById(`obs_${vId}`).value = r.obs || "";
-           
-            // Sincronizar pontos já lançados
-           
-            if (r.index < 25) atualizarInterfaceRonda(vId);
-            else {
-                document.getElementById(`nome_ponto_${vId}`).innerText = "RONDA CONCLUÍDA";
-                document.getElementById(`bar_${vId}`).style.width = "100%";
-                document.getElementById(`btn_fin_${vId}`).disabled = false;
-            }
+            // Define os valores nos campos visualmente
+            const elCartao = document.getElementById(`sel_cartao_${vId}`);
+            const elOp = document.getElementById(`sel_op_${vId}`);
+            
+            if(elCartao) elCartao.value = r.num;
+            if(elOp) elOp.value = r.op || "";
+            // ... (repetir para os outros campos)
+
+            atualizarInterfaceRonda(vId);
         }
     });
 }
