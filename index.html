@@ -205,8 +205,10 @@
             <div class="card">
                 <h3>Configurar Alarme Automático</h3>
                 <label>Ponto de Patrulhamento</label>
-                <input type="text" id="prog_ponto" placeholder="Ex: Ponto 01 - Entrada">
-                <label>Horário do Alerta</label>
+
+<label>Ponto de Patrulhamento</label>
+
+<input type="text" id="sel_prog_ponto" placeholder="Ex: Ponto 01 - Entrada">              <label>Horário do Alerta</label>
                 <input type="time" id="prog_hora">
                 <button class="btn-main" onclick="adicionarHorario()">SALVAR NA PROGRAMAÇÃO</button>
             </div>
@@ -365,106 +367,96 @@ restaurarBancoLocal();
 
     try {
         const response = await fetch(API_URL + "?nocache=" + new Date().getTime());
+        const data = await response.json(); // 🔥 FALTAVA ISSO
 
-        // Limpa tudo antes de recriar
+        // 🔥 PRESERVA DADOS LOCAIS IMPORTANTES
         const novoDB = {
-    cartoes: [],
-    operadores: [],
-    rondantes: [],
-    supervisores: [],
-    placas: [],
-    locais: [],
-    motivos: [],
-    finalizados: [],
-    programacao: [...db.programacao]
-};
+            cartoes: [],
+            operadores: [],
+            rondantes: [],
+            supervisores: [],
+            placas: [],
+            locais: [],
+            motivos: [],
+            finalizados: [],
+            programacao: [...db.programacao] // mantém programação
+        };
 
         // ==========================
-        // LENDO ABA CADASTROS
+        // CADASTROS
         // ==========================
         if (data.Cadastros) {
 
             data.Cadastros.forEach(linha => {
 
-               const tipo = linha[1];
-const nome = linha[2];
+                const tipo = linha[1];
+                const nome = linha[2];
 
-if (tipo === "Operador") {
-    novoDB.operadores.push(nome);
-}
+                if (tipo === "Operador") {
+                    novoDB.operadores.push(nome);
+                }
+                else if (tipo === "Rondante") {
+                    novoDB.rondantes.push(nome);
+                }
+                else if (tipo === "Supervisor") {
+                    novoDB.supervisores.push(nome);
+                }
+                else if (tipo === "Placa") {
+                    novoDB.placas.push(nome);
+                }
+                else if (tipo === "Desvio" || tipo === "Motivo") {
+                    novoDB.motivos.push(nome);
+                }
+                else if (tipo === "Redirecionamento") {
+                    novoDB.locais.push(nome);
+                }
 
-else if (tipo === "Rondante") {
-    novoDB.rondantes.push(nome);
-}
+                // CARTÕES
+                else if (tipo && tipo.toUpperCase().includes("CART")) {
 
-else if (tipo === "Desvio" || tipo === "Redirecionamento") {
-    novoDB.locais.push(nome);
-}
+                    const numero = linha[2];
+                    const veiculo = linha[3];
+                    const pontosRaw = linha[4];
 
+                    const pontos = pontosRaw ? pontosRaw.split("|") : [];
 
-
-             // CARTÕES
-else if (tipo && tipo.toUpperCase().includes("CART")) {
-
-    const numero = linha[2];      // coluna número do cartão
-    const veiculo = linha[3];     // coluna veículo
-    const pontosRaw = linha[4];   // coluna pontos
-
-    const pontos = pontosRaw
-        ? pontosRaw.split("|")
-        : [];
-
-   novoDB.cartoes.push({
-    num: numero,
-    veiculo: veiculo,
-    pontos: pontos
-});
-}
-
-// LOCAIS (Desvio e Redirecionamento)
+                    novoDB.cartoes.push({
+                        num: numero,
+                        veiculo: veiculo,
+                        pontos: pontos
+                    });
+                }
 
             });
         }
 
-       // ==========================
-// FINALIZADOS LIMPOS E FILTRADOS
-// ==========================
+        // ==========================
+        // FINALIZADOS
+        // ==========================
+        if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
 
-// ==========================
-// FINALIZADOS (PADRÃO ARRAY)
-// ==========================
-if (data.CartoesFinalizados && Array.isArray(data.CartoesFinalizados)) {
+            const mapaUnico = {};
 
-    // Remove duplicados pela Data/Hora
-    const mapaUnico = {};
+            data.CartoesFinalizados.forEach(reg => {
+                if(reg && reg[0]) {
+                    mapaUnico[reg[0]] = reg;
+                }
+            });
 
-    data.CartoesFinalizados.forEach(reg => {
-        if(reg && reg[0]) {
-            mapaUnico[reg[0]] = reg;
+            novoDB.finalizados = Object.values(mapaUnico);
         }
-    });
 
-    novoDB.finalizados = Object.values(mapaUnico);
+        // 🔥 ATUALIZA DB SEM PERDER ESTADO
+        db = novoDB;
 
-} else {
-    novoDB.finalizados = [];
-}
-renderizarHistorico();
-atualizarDash();
-       
-db.cartoes = novoDB.cartoes;
-db.operadores = novoDB.operadores;
-db.rondantes = novoDB.rondantes;
-db.locais = novoDB.locais;
-db.finalizados = novoDB.finalizados;
-salvarLocal();
-// ATUALIZA A TELA
+        salvarLocal();
+
         popularTodosSelects();
         renderizarHistorico();
         atualizarDash();
-restaurarEstadoRondas();
+        restaurarEstadoRondas();
 
-        console.log("✅ Dados da planilha carregados no sistema");
+        console.log("✅ Sincronizado sem apagar dados");
 
     } catch (erro) {
         console.log("Erro ao sincronizar:", erro);
@@ -551,14 +543,19 @@ function limparRegistrosComErro() {
     }
 
     function filtrarSelect(inputId, selectId) {
-        const filtro = document.getElementById(inputId).value.toUpperCase();
-        const select = document.getElementById(selectId);
-        const options = select.getElementsByTagName("option");
-        for (let i = 0; i < options.length; i++) {
-            const txt = options[i].textContent || options[i].innerText;
-            options[i].style.display = (txt.toUpperCase().indexOf(filtro) > -1 || i === 0) ? "" : "none";
-        }
+    const filtro = document.getElementById(inputId).value.toUpperCase();
+    const select = document.getElementById(selectId);
+    const options = select.getElementsByTagName("option");
+
+    for (let i = 0; i < options.length; i++) {
+        const txt = options[i].textContent || options[i].innerText;
+
+        options[i].style.display =
+            (txt.toUpperCase().indexOf(filtro) > -1 || i === 0)
+            ? ""
+            : "none";
     }
+}
 
     function adicionarPontoAoCartao() {
         const nome = document.getElementById('cad_ponto_nome').value;
@@ -595,28 +592,37 @@ function limparRegistrosComErro() {
         apiPost("Cadastros", [new Date().toLocaleString(), "CARTÃO", cartao.num, cartao.veiculo, cartao.pontos.join('|')]);
     }
 
-    async function enviarAuxiliar() {
-        const nome = document.getElementById('cad_aux_nome').value;
-        const tipo = document.getElementById('cad_aux_tipo').value;
-        if(!nome) return;
-       if(tipo === "Operador") db.operadores.push(nome);
+   async function enviarAuxiliar() {
 
-else if(tipo === "Rondante") db.rondantes.push(nome);
+    const nome = document.getElementById('cad_aux_nome').value;
+    const tipo = document.getElementById('cad_aux_tipo').value;
 
-else if(tipo === "Supervisor") db.supervisores.push(nome);
+    if(!nome) return;
 
-else if(tipo === "Placa") db.placas.push(nome);
+    // 🔥 SALVA ESTADO DA TELA ANTES
+    const estadoTela = capturarEstadoTela();
 
-else if(tipo === "Motivo") db.motivos.push(nome);
+    if(tipo === "Operador") db.operadores.push(nome);
+    else if(tipo === "Rondante") db.rondantes.push(nome);
+    else if(tipo === "Supervisor") db.supervisores.push(nome);
+    else if(tipo === "Placa") db.placas.push(nome);
+    else if(tipo === "Motivo" || tipo === "Desvio") db.motivos.push(nome);
+    else if(tipo === "Redirecionamento") db.locais.push(nome);
 
-else db.locais.push(nome);
-        ordenarListas();
-        salvarLocal();
-        popularTodosSelects();
-        alert(`${tipo} cadastrado!`);
-        document.getElementById('cad_aux_nome').value = "";
-        apiPost("Cadastros", [new Date().toLocaleString(), tipo, nome]);
-    }
+    ordenarListas();
+    salvarLocal();
+
+    // 🔥 ATUALIZA SELECTS
+    popularTodosSelects();
+
+    // 🔥 RESTAURA O QUE ESTAVA SELECIONADO
+    restaurarEstadoTela(estadoTela);
+
+    alert(`${tipo} cadastrado!`);
+    document.getElementById('cad_aux_nome').value = "";
+
+    apiPost("Cadastros", [new Date().toLocaleString(), tipo, nome]);
+}
 
     function renderizarAbasVeiculos() {
         const veics = [{id: 'V01', n: 'VICTOR 01'}, {id: 'V02', n: 'VICTOR 02'}, {id: 'V03', n: 'VICTOR 03'}, {id: 'A02', n: 'ALFA 02'}];
@@ -674,17 +680,25 @@ PONTO ANTERIOR: ---
                             </div>
                         </div>
                         <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #eee;">
-    <label>⚠️ Motivo</label>
 
-<input type="text" placeholder="🔍 Pesquisar motivo..."
-class="search-input"
-id="search_motivo_${v.id}"
-onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
+<!-- MOTIVO -->
+<label>Motivo do Desvio</label>
 
-<select id="sel_motivo_${v.id}"></select>                        
-<label>📍 Desvio do Ponto</label>
-                            <input type="text" placeholder="🔍 Local..." class="search-input" id="search_loc_ponto_${v.id}" onkeyup="filtrarSelect('search_loc_ponto_${v.id}', 'sel_loc_ponto_${v.id}')">
-                            <select id="sel_loc_ponto_${v.id}"></select>
+<select id="motivo_${v.id}">
+    <option value="">Selecione o motivo</option>
+</select>
+<!-- LOCAL -->
+<label>📍 Local do Desvio</label>
+
+<input type="text"
+    placeholder="🔍 Local..."
+    class="search-input"
+    id="search_loc_ponto_${v.id}"
+    onkeyup="filtrarSelect('search_loc_ponto_${v.id}', 'sel_loc_ponto_${v.id}')">
+
+<select id="sel_loc_ponto_${v.id}"></select>
+
+
                            <p style="font-weight:bold; text-align:center; margin-bottom:10px;">
     O PATRULHAMENTO FOI REALIZADO?
 </p>
@@ -701,43 +715,87 @@ onkeyup="filtrarSelect('search_motivo_${v.id}', 'sel_motivo_${v.id}')">
     }
 
     function popularTodosSelects() {
-        const veicIds = ['V01', 'V02', 'V03', 'A02'];
-        const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
-        ordenarListas();
-        veicIds.forEach((id, idx) => {
-            const sCartao = document.getElementById(`sel_cartao_${id}`);
-            const sOp = document.getElementById(`sel_op_${id}`);
-            const sRon = document.getElementById(`sel_ron_${id}`);
-            const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
-            if(!sCartao) return;
-const sMotivo = document.getElementById(`sel_motivo_${id}`);
+    const veicIds = ['V01', 'V02', 'V03', 'A02'];
+    const veicNomes = ["VICTOR 01", "VICTOR 02", "VICTOR 03", "ALFA 02"];
 
-if(sMotivo){
-const sSup = document.getElementById(`sel_sup_${id}`);
-const sPlaca = document.getElementById(`sel_placa_${id}`);
+    ordenarListas();
 
-if(sSup){
-sSup.innerHTML =
-'<option value="">---</option>' +
-db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
-}
+    veicIds.forEach((id, idx) => {
 
-if(sPlaca){
-sPlaca.innerHTML =
-'<option value="">---</option>' +
-db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
-}
+        const sCartao = document.getElementById(`sel_cartao_${id}`);
+        const sOp = document.getElementById(`sel_op_${id}`);
+        const sRon = document.getElementById(`sel_ron_${id}`);
+        const sLocPonto = document.getElementById(`sel_loc_ponto_${id}`);
+        const sSup = document.getElementById(`sel_sup_${id}`);
+        const sPlaca = document.getElementById(`sel_placa_${id}`);
+        const sMotivo = document.getElementById(`motivo_${id}`); // 🔥 NOVO
 
-sMotivo.innerHTML =
-'<option value="">Sem Motivo</option>' +
-db.motivos.map(o => `<option value="${o}">${o}</option>`).join('');
-}
-            sCartao.innerHTML = '<option value="">--- SELECIONE O CARTÃO ---</option>' + db.cartoes.filter(c => c.veiculo === veicNomes[idx]).map(c => `<option value="${c.num}">${c.num}</option>`).join('');
-            sOp.innerHTML = '<option value="">---</option>' + db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
-            sRon.innerHTML = '<option value="">---</option>' + db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
-            sLocPonto.innerHTML = '<option value="">Sem Desvio</option>' + db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
+        if(!sCartao) return;
+
+        // CARTÕES
+        sCartao.innerHTML =
+            '<option value="">--- SELECIONE O CARTÃO ---</option>' +
+            db.cartoes
+                .filter(c => c.veiculo === veicNomes[idx])
+                .map(c => `<option value="${c.num}">${c.num}</option>`)
+                .join('');
+
+        // OPERADORES
+        sOp.innerHTML =
+            '<option value="">---</option>' +
+            db.operadores.map(o => `<option value="${o}">${o}</option>`).join('');
+
+        // RONDANTES
+        sRon.innerHTML =
+            '<option value="">---</option>' +
+            db.rondantes.map(o => `<option value="${o}">${o}</option>`).join('');
+
+        // LOCAIS
+        sLocPonto.innerHTML =
+            '<option value="">Sem Desvio</option>' +
+            db.locais.map(o => `<option value="${o}">${o}</option>`).join('');
+
+        // SUPERVISOR
+        if(sSup){
+            sSup.innerHTML =
+                '<option value="">---</option>' +
+                db.supervisores.map(o => `<option value="${o}">${o}</option>`).join('');
+        }
+
+        // PLACA
+        if(sPlaca){
+            sPlaca.innerHTML =
+                '<option value="">---</option>' +
+                db.placas.map(o => `<option value="${o}">${o}</option>`).join('');
+        }
+
+        // 🔥 MOTIVOS (NOVO)
+        if(sMotivo){
+            sMotivo.innerHTML =
+                '<option value="">Selecione o motivo</option>' +
+                db.motivos.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+    });
+
+    // SELECT DE PONTOS (programação)
+    const selProg = document.getElementById("sel_prog_ponto");
+
+    if(selProg){
+        let todosPontos = [];
+
+        db.cartoes.forEach(c => {
+            if(c.pontos && c.pontos.length){
+                todosPontos.push(...c.pontos);
+            }
         });
+
+        todosPontos = [...new Set(todosPontos)].sort();
+
+        selProg.innerHTML =
+            '<option value="">--- SELECIONE O PONTO ---</option>' +
+            todosPontos.map(p => `<option value="${p}">${p}</option>`).join('');
     }
+}
 
     function salvarEstadoTempoReal(vId) {
         if (!rondaEmCurso[vId]) return;
@@ -1125,18 +1183,25 @@ async function salvarNaPlanilha(aba, valores) {
 function registrarAcao(vId, isOk) {
     let r = rondaEmCurso[vId];
     if(!r || r.index >= 25) return;
-   
-    const hFim = document.getElementById(`h_fim_${vId}`).value;
-    if(!hFim) { alert("⚠️ Por favor, registre a HORA FINAL do ponto."); return; }
 
-    const desvio = document.getElementById(`sel_loc_ponto_${vId}`).value;
-const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo";
+    const hFim = document.getElementById(`h_fim_${vId}`).value;
+    if(!hFim) {
+        alert("⚠️ Por favor, registre a HORA FINAL do ponto.");
+        return;
+    }
+
+    const houveDesvio = false;
+    const motivo = document.getElementById(`motivo_${vId}`).value || "";
+    const localDesvio = document.getElementById(`sel_loc_ponto_${vId}`).value || "Sem Desvio";
+
     const hIni = document.getElementById(`h_ini_${vId}`).innerText;
 
     const respostaAtual = {
         ponto: r.pontosOriginais[r.index],
         status: isOk ? "Conforme" : "Não Conforme",
-        desvio: desvio,
+        desvio: houveDesvio,
+        motivo: motivo,
+        local: localDesvio,
         hIni: hIni,
         hFim: hFim
     };
@@ -1147,7 +1212,6 @@ const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo
     salvarRondaEmAndamento(vId);
     salvarEstadoTempoReal(vId);
 
-    // 🔹 Enviar ponto atual para planilha
     salvarNaPlanilha("RondasEmAndamento", [
         new Date().toLocaleString(),
         vId,
@@ -1156,7 +1220,7 @@ const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo
         r.op,
         r.ron,
         r.obs,
-        `${respostaAtual.ponto} | ${respostaAtual.status} | Motivo: ${motivo} | Desvio: ${desvio}`
+        `${respostaAtual.ponto} | ${respostaAtual.status} | Motivo: ${motivo} | Desvio: ${houveDesvio}`
     ]);
 
     if(r.index < 25) {
@@ -1166,9 +1230,9 @@ const motivo = document.getElementById(`sel_motivo_${vId}`).value || "Sem Motivo
         document.getElementById(`bar_${vId}`).style.width = "100%";
         document.getElementById(`btn_fin_${vId}`).disabled = false;
     }
+
     document.getElementById(`h_fim_${vId}`).value = "";
-}
-async function removerRondaEmAndamento(vId) {
+}async function removerRondaEmAndamento(vId) {
 
     const r = rondaEmCurso[vId];
     if (!r) return;
@@ -1203,55 +1267,134 @@ async function salvarProgramacaoNaPlanilha(registro) {
 
 // ADICIONA HORÁRIO NA ABA E SINCRONIZA
 function adicionarHorario() {
-    const inputPonto = document.getElementById('prog_ponto');
-    const inputHora = document.getElementById('prog_hora');
 
-    const ponto = inputPonto.value.trim();
-    const hora = inputHora.value;
+    const ponto = document.getElementById('sel_prog_ponto').value.trim();
+    const hora = document.getElementById('prog_hora').value;
 
     if(!ponto || !hora) {
-        alert("⚠️ Preencha os campos!");
+        alert("⚠️ Preencha o ponto e o horário!");
         return;
     }
 
-    const registro = { ponto, hora, obs: "" };
+    const registro = {
+        ponto: ponto,
+        hora: hora,
+        obs: ""
+    };
 
-    // 1️⃣ salva localmente
+    // evita duplicado
+    const existe = db.programacao.some(p => p.ponto === ponto && p.hora === hora);
+    if(existe){
+        alert("⚠️ Esse horário já foi cadastrado!");
+        return;
+    }
+
     db.programacao.push(registro);
-    db.programacao.sort((a,b) => a.hora.localeCompare(b.hora));
+
+    // ordena por hora
+    db.programacao.sort((a, b) => a.hora.localeCompare(b.hora));
+
     salvarLocal();
-sincronizarComPlanilha();
-    // 2️⃣ envia para a planilha (sincronização)
+
     salvarProgramacaoNaPlanilha(registro);
 
-    // 3️⃣ renderiza na tabela
     renderizarProgramacao();
 
-    // limpa inputs
-    inputPonto.value = "";
-    inputHora.value = "";
+    // limpar campos
+    document.getElementById('sel_prog_ponto').value = "";
+    document.getElementById('prog_hora').value = "";
+}
+function capturarEstadoTela() {
+
+    const estado = {};
+
+    ['V01','V02','V03','A02'].forEach(vId => {
+
+        estado[vId] = {
+            cartao: document.getElementById(`sel_cartao_${vId}`)?.value,
+            operador: document.getElementById(`sel_op_${vId}`)?.value,
+            rondante: document.getElementById(`sel_ron_${vId}`)?.value,
+            supervisor: document.getElementById(`sel_sup_${vId}`)?.value,
+            placa: document.getElementById(`sel_placa_${vId}`)?.value,
+            motivo: document.getElementById(`motivo_${vId}`)?.value,
+            local: document.getElementById(`sel_loc_ponto_${vId}`)?.value
+        };
+
+    });
+
+    return estado;
+}
+function restaurarEstadoTela(estado) {
+
+    ['V01','V02','V03','A02'].forEach(vId => {
+
+        if(!estado[vId]) return;
+
+        if(document.getElementById(`sel_cartao_${vId}`))
+            document.getElementById(`sel_cartao_${vId}`).value = estado[vId].cartao || "";
+
+        if(document.getElementById(`sel_op_${vId}`))
+            document.getElementById(`sel_op_${vId}`).value = estado[vId].operador || "";
+
+        if(document.getElementById(`sel_ron_${vId}`))
+            document.getElementById(`sel_ron_${vId}`).value = estado[vId].rondante || "";
+
+        if(document.getElementById(`sel_sup_${vId}`))
+            document.getElementById(`sel_sup_${vId}`).value = estado[vId].supervisor || "";
+
+        if(document.getElementById(`sel_placa_${vId}`))
+            document.getElementById(`sel_placa_${vId}`).value = estado[vId].placa || "";
+
+        if(document.getElementById(`motivo_${vId}`))
+            document.getElementById(`motivo_${vId}`).value = estado[vId].motivo || "";
+
+        if(document.getElementById(`sel_loc_ponto_${vId}`))
+            document.getElementById(`sel_loc_ponto_${vId}`).value = estado[vId].local || "";
+
+    });
+
 }
 
-// RENDERIZA OS HORÁRIOS CADASTRADOS
 function renderizarProgramacao() {
-    const corpo = document.getElementById('corpoProgramacao');
+
+    const corpo = document.getElementById("corpoProgramacao");
+
     if(!corpo) return;
 
-    corpo.innerHTML = db.programacao.length === 0
-        ? '<tr><td colspan="3" style="text-align:center;">Nenhum horário agendado</td></tr>'
-        : db.programacao.map((p, i) => `
-            <tr>
-                <td style="font-weight:bold; color:var(--samarco-blue);">${p.hora}</td>
-                <td>${p.ponto}</td>
-                <td>
-                    <button onclick="removerProgramacao(${i})"
-                        style="color:var(--danger); border:1px solid var(--danger); background:none; cursor:pointer; padding:5px 10px; border-radius:4px;">
-                        Remover
-                    </button>
-                </td>
-            </tr>`).join('');
+    corpo.innerHTML = db.programacao.map((p, i) => `
+        <tr>
+            <td>${p.hora}</td>
+            <td>${p.ponto}</td>
+            <td>
+                <button onclick="removerProgramacao(${i})"
+                    style="background:red;color:white;border:none;padding:5px;border-radius:4px;">
+                    EXCLUIR
+                </button>
+            </td>
+        </tr>
+    `).join('');
 }
 
+
+function renderizarProgramacao() {
+
+    const corpo = document.getElementById("corpoProgramacao");
+
+    if(!corpo) return;
+
+    corpo.innerHTML = db.programacao.map((p, i) => `
+        <tr>
+            <td>${p.hora}</td>
+            <td>${p.ponto}</td>
+            <td>
+                <button onclick="removerProgramacao(${i})"
+                    style="background:red;color:white;border:none;padding:5px;border-radius:4px;">
+                    EXCLUIR
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
 
 </script>
 
